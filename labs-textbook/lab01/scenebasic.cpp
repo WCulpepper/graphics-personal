@@ -38,6 +38,8 @@ void SceneBasic::initScene()
     glEnable(GL_DEPTH_TEST);
     projection = mat4(1.0f);
     angle = glm::radians(140.0f);
+    tPrev = 0;
+    rotSpeed = glm::pi<float>()/8.0f;
 
     // (2) Use this to load a binary shader.  Use the format provided when the binary was written.
     // int shaderFormat = 36385;
@@ -380,9 +382,13 @@ std::string SceneBasic::getProgramInfoLog(GLuint program) {
     return log;
 }
 
-void SceneBasic::update( float t )
-{
+void SceneBasic::update( float t ) {
+    float deltaT = t - tPrev;
+    if(tPrev == 0.0f) deltaT = 0.0f;
+    tPrev = t;
 
+    angle += rotSpeed*deltaT;
+    if(angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
 }
 
 void SceneBasic::render()

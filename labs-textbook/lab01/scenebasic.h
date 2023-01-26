@@ -12,7 +12,7 @@ private:
     GLuint vaoHandle;
     GLuint programHandle;
 
-    float angle;
+    float angle, tPrev, rotSpeed;
 
     void linkMe(GLint vertShader, GLint fragShader);
 	void compileShaderProgram();
