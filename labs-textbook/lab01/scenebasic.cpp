@@ -51,23 +51,23 @@ void SceneBasic::initScene()
 
     /////////////////// Create the VBO ////////////////////
     float positionData[] = {
-            -0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f,  0.5f, -0.5f,
-            -0.5f, 0.5f, -0.5f,
-            -0.5f, -0.5f, 0.5f, 
-            0.5f, -0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, 0.5f };
+            -0.5, -0.5, -0.5,
+            0.5, -0.5, -0.5,
+            0.5,  0.5, -0.5,
+            -0.5, 0.5, -0.5,
+            -0.5, -0.5, 0.5, 
+            0.5, -0.5, 0.5,
+            0.5, 0.5, 0.5,
+            -0.5, 0.5, 0.5 };
     float colorData[] = {
-            0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f,
-            1.0f, 1.0f, 0.0f,
-            1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f,
-            0.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f,
-            1.0f, 0.0f, 1.0f };
+            0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            1.0, 1.0, 0.0,
+            1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0,
+            0.0, 1.0, 1.0,
+            1.0, 1.0, 1.0,
+            1.0, 0.0, 1.0 };
     
     int indexData[] = {
             0, 2, 1, 0, 3, 2,
@@ -88,13 +88,13 @@ void SceneBasic::initScene()
     GLuint colorBufferHandle = vboHandles[1];
 
     glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 24*sizeof(float), positionData, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, colorBufferHandle);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(colorData), colorData, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 24*sizeof(float), colorData, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*(sizeof(GLuint)), (void *)&(indexData[0]), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 36*(sizeof(GLuint)), (void *)&(indexData[0]), GL_STATIC_DRAW);
     // Create and set-up the vertex array object
     glGenVertexArrays( 1, &vaoHandle );
     glBindVertexArray(vaoHandle);
