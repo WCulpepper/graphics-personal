@@ -1,4 +1,4 @@
-#include "A1Engine.h"
+#include "scenebasic.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
@@ -18,9 +18,9 @@ using std::string;
 
 #include "glutils.h"
 
-A1Engine::A1Engine() { }
+SceneBasic::SceneBasic() { }
 
-void A1Engine::initScene()
+void SceneBasic::initScene()
 {
     // **************************************************************************************
     // Choose one of the following options for the shader program.
@@ -114,7 +114,7 @@ void A1Engine::initScene()
     glBindVertexArray(0);
 }
 
-void A1Engine::loadSpirvShader() {
+void SceneBasic::loadSpirvShader() {
 
     std::cout << "Loading SPIR-V shaders." << std::endl;
 
@@ -182,7 +182,7 @@ void A1Engine::loadSpirvShader() {
     glUseProgram(programHandle);
 }
 
-void A1Engine::compileShaderProgram() {
+void SceneBasic::compileShaderProgram() {
     std::cout << "Compiling shader program" << std::endl;
 
 	//////////////////////////////////////////////////////
@@ -265,7 +265,7 @@ void A1Engine::compileShaderProgram() {
 	linkMe(vertShader, fragShader);
 }
 
-void A1Engine::loadShaderBinary(GLint format) {
+void SceneBasic::loadShaderBinary(GLint format) {
     std::cout << "Loading shader binary: shader/program.bin (format = " << format << ")" << std::endl;
 
     // Create the program object
@@ -292,7 +292,7 @@ void A1Engine::loadShaderBinary(GLint format) {
 	glUseProgram(programHandle);
 }
 
-void A1Engine::linkMe(GLint vertShader, GLint fragShader)
+void SceneBasic::linkMe(GLint vertShader, GLint fragShader)
 {
     // Create the program object
     programHandle = glCreateProgram();
@@ -331,7 +331,7 @@ void A1Engine::linkMe(GLint vertShader, GLint fragShader)
     glUseProgram( programHandle );
 }
 
-void A1Engine::writeShaderBinary() {
+void SceneBasic::writeShaderBinary() {
     GLint formats;
     glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
     std::cout << "Number of binary formats supported by this driver = " << formats << std::endl;
@@ -355,7 +355,7 @@ void A1Engine::writeShaderBinary() {
     }
 }
 
-std::string A1Engine::getShaderInfoLog(GLuint shader) {
+std::string SceneBasic::getShaderInfoLog(GLuint shader) {
     GLint logLen;
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLen);
 
@@ -369,7 +369,7 @@ std::string A1Engine::getShaderInfoLog(GLuint shader) {
     return log;
 }
 
-std::string A1Engine::getProgramInfoLog(GLuint program) {
+std::string SceneBasic::getProgramInfoLog(GLuint program) {
     GLint logLen;
     glGetProgramiv( program, GL_INFO_LOG_LENGTH, &logLen );
 
@@ -382,7 +382,7 @@ std::string A1Engine::getProgramInfoLog(GLuint program) {
     return log;
 }
 
-void A1Engine::update( float t ) {
+void SceneBasic::update( float t ) {
     float deltaT = t - tPrev;
     if(tPrev == 0.0f) deltaT = 0.0f;
     tPrev = t;
@@ -391,7 +391,7 @@ void A1Engine::update( float t ) {
     if(angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
 }
 
-void A1Engine::render()
+void SceneBasic::render()
 {
     glViewport(0,0,width,height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -409,7 +409,7 @@ void A1Engine::render()
     glBindVertexArray(0);
 }
 
-void A1Engine::resize(int w, int h)
+void SceneBasic::resize(int w, int h)
 {
     width = w;
     height = h;

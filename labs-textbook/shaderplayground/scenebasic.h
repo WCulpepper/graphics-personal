@@ -1,12 +1,12 @@
-#ifndef A1Engine_H
-#define A1Engine_H
+#ifndef SCENEBASIC_H
+#define SCENEBASIC_H
 
 #include "scene.h"
 
 #include "cookbookogl.h"
 #include <string>
 
-class A1Engine : public Scene
+class SceneBasic : public Scene
 {
 private:
     GLuint vaoHandle;
@@ -24,7 +24,7 @@ private:
     std::string getProgramInfoLog(GLuint program);
 
 public:
-    A1Engine();
+    SceneBasic();
 
     void initScene();
     void update( float t );
@@ -33,4 +33,4 @@ public:
 
 };
 
-#endif // A1Engine_H
+#endif // SCENEBASIC_H

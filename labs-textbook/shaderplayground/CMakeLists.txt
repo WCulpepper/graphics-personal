@@ -1,11 +1,11 @@
-set(target a01)
+set(target shaderplayground)
 
-set( a01_SOURCES
-	A1Engine.cpp
+set( shaderplayground_SOURCES
+	scenebasic.cpp
 	main.cpp
 	 )
 
-add_executable( ${target} ${a01_SOURCES} )
+add_executable( ${target} ${shaderplayground_SOURCES} )
 
 target_compile_definitions(${target}
 		PRIVATE

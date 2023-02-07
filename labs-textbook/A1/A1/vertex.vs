@@ -4,6 +4,7 @@ uniform float time;
 
 layout (location=0) in vec3 VertexPosition;
 layout (location=1) in vec3 VertexColor;
+layout (location=2) in vec3 vertexNormal;
 
 layout (location=0) out vec3 vColor;
 
@@ -29,6 +30,8 @@ subroutine(processVertex)
 vec3 shrinkObj(vec3 inputVertex) {
     return vec3(inputVertex.x/2.0, inputVertex.y/2.0, inputVertex.z/2.0);
 }
+
+
 
 void main()
 {
