@@ -147,7 +147,7 @@ int main(void)
 
 	GLuint vertpos_base_buffer;
 	GLuint vertcolor_base_buffer;
-	GLuint normal_base_buffer;
+	// GLuint normal_base_buffer;
 	GLuint groundVAO;
 
     int i,j,c;
@@ -245,42 +245,48 @@ int main(void)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 60*sizeof(int), (void *)&(tindices[0][0]), GL_STATIC_DRAW);
 
+	// position attribute
     glBindBuffer(GL_ARRAY_BUFFER, vertpos_buffer);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
+	// color attribute
     glBindBuffer(GL_ARRAY_BUFFER, vertcolor_buffer);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
-	glGenVertexArrays(1, &groundVAO);
-    glBindVertexArray(groundVAO);
 
 	glGenBuffers(1, &vertpos_base_buffer);
     glGenBuffers(1, &vertcolor_base_buffer);
-    glGenBuffers(1, &normal_base_buffer);
+	// ground VAO/VBO
+	glGenVertexArrays(1, &groundVAO);
+    glBindVertexArray(groundVAO);
+
+	
+    // glGenBuffers(1, &normal_base_buffer);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertpos_base_buffer);
 	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(vdata_base[0][0]), GL_STATIC_DRAW);
 
+	glBindBuffer(GL_ARRAY_BUFFER, vertcolor_base_buffer);
+	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(cdata_base[0][0]), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vertpos_base_buffer);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertcolor_base_buffer);
-	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(cdata_base[0][0]), GL_STATIC_DRAW);
-
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
-	glBindBuffer(GL_ARRAY_BUFFER, normal_base_buffer);
-	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(normaldata_base[0][0]), GL_STATIC_DRAW);
+	// glBindBuffer(GL_ARRAY_BUFFER, normal_base_buffer);
+	// glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(normaldata_base[0][0]), GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
-
-	
+	// glEnableVertexAttribArray(2);
+	// glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	glBindVertexArray(0);
+	
 
     initShaders();
 
@@ -355,7 +361,6 @@ int main(void)
 
 		glBindVertexArray(groundVAO);
 		glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0);
-		glBindVertexArray(0);
 
 	    glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
