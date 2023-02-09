@@ -11,13 +11,15 @@
 #define IZ 0.850650808352039932
 
 
-GLuint program;
+GLuint gouraudProgram;
+GLuint phongProgram;
+
+bool useGouraud = true;
 
 int lastTime;
 int nFrames;
 
-int colorScheme = 1;
-int vertexScheme = 1;
+int shaderSubroutine = 1;
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
@@ -62,29 +64,48 @@ unsigned int loadShader(const char *source, unsigned int mode)
 
 void initShaders()
 {
-	char *vsSource, *fsSource;
-	GLuint vs,fs;
+	char *vsSource, *fsSource, *vsPhongSource, *fsPhongSource;
+	GLuint vs,fs, vsPhong, fsPhong;
 
 	vsSource = (char *)malloc(sizeof(char)*20000);
 	fsSource = (char *)malloc(sizeof(char)*20000);
 
+	vsPhongSource = (char *)malloc(sizeof(char)*20000);
+	fsPhongSource = (char *)malloc(sizeof(char)*20000);
+
 	vsSource[0]='\0';
 	fsSource[0]='\0';
 
-	program = glCreateProgram();
+	vsPhongSource[0]='\0';
+	fsPhongSource[0]='\0';
 
-	readShader("vertex_phong.vs",vsSource);
-	readShader("fragment_phong.fs",fsSource);
+	gouraudProgram = glCreateProgram();
+
+	readShader("vertex_gouraud.vs",vsSource);
+	readShader("fragment_gouraud.fs",fsSource);
 
 	vs = loadShader(vsSource,GL_VERTEX_SHADER);
 	fs = loadShader(fsSource,GL_FRAGMENT_SHADER);
 
-	glAttachShader(program,vs);
-	glAttachShader(program,fs);
+	glAttachShader(gouraudProgram,vs);
+	glAttachShader(gouraudProgram,fs);
 
-	glLinkProgram(program);
+	glLinkProgram(gouraudProgram);
 
-	glUseProgram(program);
+	phongProgram = glCreateProgram();
+
+	readShader("vertex_phong.vs",vsPhongSource);
+	readShader("fragment_phong.fs",fsPhongSource);
+
+	vsPhong = loadShader(vsPhongSource,GL_VERTEX_SHADER);
+	fsPhong = loadShader(fsPhongSource,GL_FRAGMENT_SHADER);
+
+	glAttachShader(phongProgram,vsPhong);
+	glAttachShader(phongProgram,fsPhong);
+
+	glLinkProgram(phongProgram);
+
+	glUseProgram(phongProgram);
 	
 }
 
@@ -99,17 +120,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
-		colorScheme = 1;
+		useGouraud = true;
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
-		colorScheme = 2;
-	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
-		colorScheme = 3;
-	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
-		vertexScheme = 1;
-	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
-		vertexScheme = 2;
-	if (key == GLFW_KEY_6 && action == GLFW_PRESS)
-		vertexScheme = 3;
+		useGouraud = false;
 }
 
 void showFPS(GLFWwindow* window) {
@@ -126,18 +139,9 @@ void showFPS(GLFWwindow* window) {
             lastTime = currentTime;
         }
 }
-
-void createGroundBuffers() {
-	
-
-
-}
     
 int main(void)
-{
-
-	
-	
+{	
     GLFWwindow* window;
 
     GLuint vertpos_buffer;
@@ -301,10 +305,10 @@ int main(void)
 
 	
 
-    mvp_location = glGetUniformLocation(program,"MVP");
-	time_location = glGetUniformLocation(program, "time");
-	cameraPos_location = glGetUniformLocation(program, "cameraPos");
-	lightPos_location = glGetUniformLocation(program, "lightPos");
+    mvp_location = glGetUniformLocation(gouraudProgram,"MVP");
+	time_location = glGetUniformLocation(gouraudProgram, "time");
+	cameraPos_location = glGetUniformLocation(gouraudProgram, "cameraPos");
+	lightPos_location = glGetUniformLocation(gouraudProgram, "lightPos");
 	
 	lightPos = vec3(3.0f, 3.0f, 3.0f);
 	glUniform3fv(lightPos_location, 1, &(lightPos)[0]);
@@ -318,13 +322,8 @@ int main(void)
     tPrev = 0;
     rotSpeed = glm::pi<float>()/800.0f;
 
-	GLuint passThroughIndex = glGetSubroutineIndex(program, GL_FRAGMENT_SHADER, "passThrough");
-	GLuint grayScaleIndex = glGetSubroutineIndex(program, GL_FRAGMENT_SHADER, "grayScale");
-	GLuint timeFlowIndex = glGetSubroutineIndex(program, GL_FRAGMENT_SHADER, "timeFlow");
-
-	GLuint passThroughVertexIndex = glGetSubroutineIndex(program, GL_VERTEX_SHADER, "passThrough");
-	GLuint shrinkObjIndex = glGetSubroutineIndex(program, GL_VERTEX_SHADER, "shrinkObj");
-	GLuint timeFlowVertexIndex = glGetSubroutineIndex(program, GL_VERTEX_SHADER, "timeFlow");
+	// GLuint passThroughIndexGouraud = glGetSubroutineIndex(gouraudProgram, GL_VERTEX_SHADER, "passThrough");
+	// GLuint passThroughIndexPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "passThrough");
 
 	cameraPos = vec3(2.0f, 1.5f, 2.0f);
 	glUniform3fv(cameraPos_location, 1, &(cameraPos)[0]);
@@ -332,6 +331,13 @@ int main(void)
 	
     while (!glfwWindowShouldClose(window))
     {
+		
+		// if(useGouraud) {
+		// 	glUseProgram(gouraudProgram);
+		// } else {
+		// 	glUseProgram(phongProgram);
+		// }
+
 		model = mat4(1.0f);
 		glUniform1f(time_location, glfwGetTime());
         float ratio;
@@ -354,22 +360,6 @@ int main(void)
     	projection = glm::perspective(glm::radians(45.0f), (float)width/height, 0.3f, 100.0f);
 		model = glm::rotate(model, angle, vec3(0.0f, 1.0f, 0.0f));
     	mvp = projection * view * model;
-
-		if(colorScheme == 1) {
-			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &passThroughIndex);
-		} else if(colorScheme == 2) {
-			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &grayScaleIndex);
-		} else if(colorScheme == 3) {
-			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &timeFlowIndex);
-		}
-
-		if(vertexScheme == 1) {
-			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &passThroughVertexIndex);
-		} else if(vertexScheme == 2) {
-			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &shrinkObjIndex);
-		} else if(vertexScheme == 3) {
-			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &timeFlowVertexIndex);
-		}
 
     	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &(mvp)[0][0]);
 

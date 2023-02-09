@@ -25,28 +25,28 @@ vec3 passThrough(vec3 inputVertex) {
     return inputVertex;
 }
 
-subroutine(processVertex)
-vec3 timeFlow(vec3 inputVertex) {
-    return inputVertex + vec3(  cos(inputVertex.x + time),
-                                sin(inputVertex.z + time),
-                                0
-                             );
-}
+// subroutine(processVertex)
+// vec3 timeFlow(vec3 inputVertex) {
+//     return inputVertex + vec3(  cos(inputVertex.x + time),
+//                                 sin(inputVertex.z + time),
+//                                 0
+//                              );
+// }
 
-subroutine(processVertex)
-vec3 shrinkObj(vec3 inputVertex) {
-    return vec3(inputVertex.x/2.0, inputVertex.y/2.0, inputVertex.z/2.0);
-}
+// subroutine(processVertex)
+// vec3 shrinkObj(vec3 inputVertex) {
+//     return vec3(inputVertex.x/2.0, inputVertex.y/2.0, inputVertex.z/2.0);
+// }
 
-subroutine(processVertex)
-vec3 gouraudBlinnPhong(vec3 inputVertex) {
-    return inputVertex;
-}
+// subroutine(processVertex)
+// vec3 gouraudBlinnPhong(vec3 inputVertex) {
+//     return inputVertex;
+// }
 
-subroutine(processVertex)
-vec3 gouraudPhong(vec3 inputVertex) {
-    return inputVertex;
-}
+// subroutine(processVertex)
+// vec3 gouraudPhong(vec3 inputVertex) {
+//     return inputVertex;
+// }
 
 
 
@@ -54,5 +54,5 @@ void main()
 {
     vColor = diffuse(lightPos, VertexPosition);
 
-    gl_Position = MVP * vec4(vertexProcessor(VertexPosition),1.0);
+    gl_Position = MVP * vec4(VertexPosition,1.0);
 }
