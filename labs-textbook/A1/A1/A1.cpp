@@ -73,8 +73,8 @@ void initShaders()
 
 	program = glCreateProgram();
 
-	readShader("vertex.vs",vsSource);
-	readShader("fragment.fs",fsSource);
+	readShader("vertex_phong.vs",vsSource);
+	readShader("fragment_phong.fs",fsSource);
 
 	vs = loadShader(vsSource,GL_VERTEX_SHADER);
 	fs = loadShader(fsSource,GL_FRAGMENT_SHADER);
@@ -147,13 +147,15 @@ int main(void)
 
 	GLuint vertpos_base_buffer;
 	GLuint vertcolor_base_buffer;
-	// GLuint normal_base_buffer;
+	GLuint normal_base_buffer;
 	GLuint groundVAO;
 
     int i,j,c;
 
     GLint mvp_location;
 	GLint time_location;
+	GLint cameraPos_location;
+	GLint lightPos_location;
 
 	lastTime = 0;
 	nFrames = 0;
@@ -218,7 +220,7 @@ int main(void)
 	};
 
 	static GLfloat vdata_base[4][3] = {
-		{-1.0,-1.0,-1.0}, {1.0,-1.0,-1.0}, {1.0,-1.0,1.0}, {-1.0,-1.0,1.0}
+		{-2.0,-1.0,-2.0}, {2.0,-1.0,-2.0}, {2.0,-1.0,2.0}, {-2.0,-1.0,2.0}
 	};
 
 	static GLfloat cdata_base[4][3] = {    
@@ -279,11 +281,11 @@ int main(void)
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
-	// glBindBuffer(GL_ARRAY_BUFFER, normal_base_buffer);
-	// glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(normaldata_base[0][0]), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, normal_base_buffer);
+	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(normaldata_base[0][0]), GL_STATIC_DRAW);
 
-	// glEnableVertexAttribArray(2);
-	// glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	glBindVertexArray(0);
 	
@@ -294,20 +296,27 @@ int main(void)
 
 	float angle =0;
 	
-    vec3 cameraPos;
-    mat4 mvp,view,projection;
+    vec3 cameraPos, lightPos;
+    mat4 mvp,view,projection, model;
+
+	
 
     mvp_location = glGetUniformLocation(program,"MVP");
 	time_location = glGetUniformLocation(program, "time");
+	cameraPos_location = glGetUniformLocation(program, "cameraPos");
+	lightPos_location = glGetUniformLocation(program, "lightPos");
+	
+	lightPos = vec3(3.0f, 3.0f, 3.0f);
+	glUniform3fv(lightPos_location, 1, &(lightPos)[0]);
 
-	glClearColor(0.4,0.4,0.4,0);
+	glClearColor(0.2,0.2,0.2,0);
 
 	float tPrev, rotSpeed, t, deltaT;
 
 	angle = glm::radians(140.0f);
 
     tPrev = 0;
-    rotSpeed = glm::pi<float>()/8.0f;
+    rotSpeed = glm::pi<float>()/800.0f;
 
 	GLuint passThroughIndex = glGetSubroutineIndex(program, GL_FRAGMENT_SHADER, "passThrough");
 	GLuint grayScaleIndex = glGetSubroutineIndex(program, GL_FRAGMENT_SHADER, "grayScale");
@@ -317,8 +326,13 @@ int main(void)
 	GLuint shrinkObjIndex = glGetSubroutineIndex(program, GL_VERTEX_SHADER, "shrinkObj");
 	GLuint timeFlowVertexIndex = glGetSubroutineIndex(program, GL_VERTEX_SHADER, "timeFlow");
 
+	cameraPos = vec3(2.0f, 1.5f, 2.0f);
+	glUniform3fv(cameraPos_location, 1, &(cameraPos)[0]);
+	view = glm::lookAt(cameraPos, vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f));
+	
     while (!glfwWindowShouldClose(window))
     {
+		model = mat4(1.0f);
 		glUniform1f(time_location, glfwGetTime());
         float ratio;
         int width, height;
@@ -330,16 +344,16 @@ int main(void)
 		deltaT = t - tPrev;
     	if(tPrev == 0.0f) deltaT = 0.0f;
     	tPrev = t;
+    	
+    	angle += 0.005f;
+		if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
 
-    	angle += rotSpeed * deltaT;
-    	if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
-
-	    cameraPos = vec3(2.0f * cos(angle), 1.5f, 2.0f * sin(angle));
-    	view = glm::lookAt(cameraPos, vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f));
+	    // cameraPos = vec3(2.0f * cos(angle), 1.5f, 2.0f * sin(angle));
+		
 
     	projection = glm::perspective(glm::radians(45.0f), (float)width/height, 0.3f, 100.0f);
-
-    	mvp = projection * view;
+		model = glm::rotate(model, angle, vec3(0.0f, 1.0f, 0.0f));
+    	mvp = projection * view * model;
 
 		if(colorScheme == 1) {
 			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &passThroughIndex);

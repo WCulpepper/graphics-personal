@@ -78,9 +78,21 @@ void SceneBasic::initScene()
             0, 1, 4, 1, 5, 4, 
             4, 5, 6, 4, 6, 7, 
             0, 4, 3, 4, 7, 3 };
+    
+    float normalData[] {
+        0.0, 0.0, -1.0,
+        0.0, 0.0, 1.0,
+        0.0, -1.0, 0.0,
+        0.0, 1.0, 0.0,
+        -1.0, 0.0, 0.0,
+        1.0, 0.0, 0.0
+    };
 
     GLuint indexBuffer;
     glGenBuffers(1, &indexBuffer);
+
+    GLuint normalBuffer;
+    glGenBuffers(1, &normalBuffer);
 
 
     // Create and populate the buffer objects

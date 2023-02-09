@@ -3,6 +3,7 @@ set(target lab01)
 set( lab01_SOURCES
 	scenebasic.cpp
 	main.cpp
+	scenebasic.h
 	 )
 
 add_executable( ${target} ${lab01_SOURCES} )

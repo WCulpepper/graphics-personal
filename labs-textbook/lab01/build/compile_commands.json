@@ -1,0 +1,12 @@
+[
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab01/build",
+  "command": "C:\\w64devkit\\bin\\g++.exe -DGLFW_INCLUDE_NONE  -g -o CMakeFiles\\lab01.dir\\scenebasic.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab01\\scenebasic.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab01/scenebasic.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab01/build",
+  "command": "C:\\w64devkit\\bin\\g++.exe -DGLFW_INCLUDE_NONE  -g -o CMakeFiles\\lab01.dir\\main.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab01\\main.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab01/main.cpp"
+}
+]
