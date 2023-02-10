@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <math.h>
+#include <iostream>
 
 // the X and Z values are for drawing an icosahedron
 #define IX 0.525731112119133606 
@@ -332,11 +333,13 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
 		
-		// if(useGouraud) {
-		// 	glUseProgram(gouraudProgram);
-		// } else {
-		// 	glUseProgram(phongProgram);
-		// }
+		if(useGouraud) {
+			glUseProgram(gouraudProgram);
+			std::cout << "Using the Gouraud Shader\n";
+		} else {
+			glUseProgram(phongProgram);
+			std::cout << "Using the Phong Shader\n";
+		}
 
 		model = mat4(1.0f);
 		glUniform1f(time_location, glfwGetTime());
@@ -363,8 +366,8 @@ int main(void)
 
     	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &(mvp)[0][0]);
 
-		glBindVertexArray(groundVAO);
-		glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0);
+		// glBindVertexArray(groundVAO);
+		// glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0);
 
 	    glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);

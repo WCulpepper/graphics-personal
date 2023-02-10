@@ -52,7 +52,10 @@ vec3 passThrough(vec3 inputVertex) {
 
 void main()
 {
-    vColor = diffuse(lightPos, VertexPosition);
+    // vec3 vNormal = normalize(VertexPosition);
+    // vColor = diffuse(VertexColor, vNormal);
+
+    vColor = VertexColor;
 
     gl_Position = MVP * vec4(VertexPosition,1.0);
 }

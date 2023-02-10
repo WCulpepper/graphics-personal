@@ -9,7 +9,7 @@ layout(location=1) in vec4 vPos;
 layout (location=0) out vec4 FragColor;
 
 vec3 diffuse(vec3 s, vec3 n) {
-    return vPos*0.05*(dot(n, s));
+    return vColor*0.05*(dot(n, s));
 }
 
 subroutine vec3 processColor(vec3);
@@ -33,7 +33,7 @@ vec3 passThrough(vec3 inputColor) {
 // }
 
 void main() {
-    vec3 diffColor = diffuse(vColor, lightPos);
-    FragColor = vec4(colorProcessor(diffColor), 1.0);
+    // vec3 diffColor = diffuse(vPos, vColor);
+    FragColor = vec4(vColor, 1.0);
 }
 
