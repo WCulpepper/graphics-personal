@@ -14,7 +14,7 @@ layout (location=0) out vec3 vColor;
 uniform mat4 MVP;
 
 vec3 diffuse(vec3 s, vec3 n) {
-    return VertexColor*1.0*1.0*(dot(n, s));
+    return VertexColor*0.5*(dot(n, s));
 }
 
 subroutine vec3 processVertex(vec3);
@@ -53,9 +53,9 @@ vec3 passThrough(vec3 inputVertex) {
 void main()
 {
     // vec3 vNormal = normalize(VertexPosition);
-    // vColor = diffuse(VertexColor, vNormal);
+    vColor = diffuse(normalize(VertexPosition), lightPos);
 
-    vColor = VertexColor;
+    // vColor = VertexColor;
 
     gl_Position = MVP * vec4(VertexPosition,1.0);
 }

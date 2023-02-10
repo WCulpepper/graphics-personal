@@ -33,7 +33,7 @@ vec3 passThrough(vec3 inputColor) {
 // }
 
 void main() {
-    // vec3 diffColor = diffuse(vPos, vColor);
-    FragColor = vec4(vColor, 1.0);
+    vec3 diffColor = diffuse(normalize(vPos.xyz), lightPos);
+    FragColor = vec4(diffColor, 1.0);
 }
 

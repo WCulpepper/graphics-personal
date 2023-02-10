@@ -157,10 +157,15 @@ int main(void)
 
     int i,j,c;
 
-    GLint mvp_location;
-	GLint time_location;
-	GLint cameraPos_location;
-	GLint lightPos_location;
+    GLint mvp_location_gouraud;
+	GLint time_location_gouraud;
+	GLint cameraPos_location_gouraud;
+	GLint lightPos_location_gouraud;
+
+	GLint mvp_location_phong;
+	GLint time_location_phong;
+	GLint cameraPos_location_phong;
+	GLint lightPos_location_phong;
 
 	lastTime = 0;
 	nFrames = 0;
@@ -306,13 +311,19 @@ int main(void)
 
 	
 
-    mvp_location = glGetUniformLocation(gouraudProgram,"MVP");
-	time_location = glGetUniformLocation(gouraudProgram, "time");
-	cameraPos_location = glGetUniformLocation(gouraudProgram, "cameraPos");
-	lightPos_location = glGetUniformLocation(gouraudProgram, "lightPos");
+    mvp_location_gouraud = glGetUniformLocation(gouraudProgram,"MVP");
+	time_location_gouraud = glGetUniformLocation(gouraudProgram, "time");
+	cameraPos_location_gouraud = glGetUniformLocation(gouraudProgram, "cameraPos");
+	lightPos_location_gouraud = glGetUniformLocation(gouraudProgram, "lightPos");
+
+	mvp_location_phong = glGetUniformLocation(phongProgram,"MVP");
+	time_location_phong = glGetUniformLocation(phongProgram, "time");
+	cameraPos_location_phong = glGetUniformLocation(phongProgram, "cameraPos");
+	lightPos_location_phong = glGetUniformLocation(phongProgram, "lightPos");
 	
 	lightPos = vec3(3.0f, 3.0f, 3.0f);
-	glUniform3fv(lightPos_location, 1, &(lightPos)[0]);
+	glUniform3fv(lightPos_location_gouraud, 1, &(lightPos)[0]);
+	glUniform3fv(lightPos_location_phong, 1, &(lightPos)[0]);
 
 	glClearColor(0.2,0.2,0.2,0);
 
@@ -327,7 +338,7 @@ int main(void)
 	// GLuint passThroughIndexPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "passThrough");
 
 	cameraPos = vec3(2.0f, 1.5f, 2.0f);
-	glUniform3fv(cameraPos_location, 1, &(cameraPos)[0]);
+	glUniform3fv(cameraPos_location_gouraud, 1, &(cameraPos)[0]);
 	view = glm::lookAt(cameraPos, vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f));
 	
     while (!glfwWindowShouldClose(window))
@@ -335,14 +346,17 @@ int main(void)
 		
 		if(useGouraud) {
 			glUseProgram(gouraudProgram);
-			std::cout << "Using the Gouraud Shader\n";
+			// std::cout << "Using the Gouraud Shader\n";
 		} else {
 			glUseProgram(phongProgram);
-			std::cout << "Using the Phong Shader\n";
+			// std::cout << "Using the Phong Shader\n";
 		}
 
+		
+
 		model = mat4(1.0f);
-		glUniform1f(time_location, glfwGetTime());
+		glUniform1f(time_location_gouraud, glfwGetTime());
+		glUniform1f(time_location_phong, glfwGetTime());
         float ratio;
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -364,7 +378,8 @@ int main(void)
 		model = glm::rotate(model, angle, vec3(0.0f, 1.0f, 0.0f));
     	mvp = projection * view * model;
 
-    	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &(mvp)[0][0]);
+    	glUniformMatrix4fv(mvp_location_gouraud, 1, GL_FALSE, &(mvp)[0][0]);
+		glUniformMatrix4fv(mvp_location_phong, 1, GL_FALSE, &(mvp)[0][0]);
 
 		// glBindVertexArray(groundVAO);
 		// glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0);
