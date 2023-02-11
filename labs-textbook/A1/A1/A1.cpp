@@ -143,9 +143,20 @@ void showFPS(GLFWwindow* window) {
     
 int main(void)
 {	
+	struct ShaderMaterial {
+		GLuint materialAmbLocation;
+		GLuint materialDiffLocation;
+		GLuint materialSpecLocation;
+		GLuint materialShininessLocation;
+	};
+
+	ShaderMaterial gouraudMaterial;
+	ShaderMaterial phongMaterial; 
+
     GLFWwindow* window;
 
     GLuint vertpos_buffer;
+	GLuint vertnormal_buffer;
     GLuint vertcolor_buffer;
     GLuint index_buffer;
     GLuint VAO;
@@ -213,6 +224,8 @@ int main(void)
 		{IZ, IX, 0.0}, {-IZ, IX, 0.0}, {IZ, -IX, 0.0}, {-IZ, -IX, 0.0} 
 	};
 
+
+
 	// vertex colors
 	static GLfloat cdata[12][3] = {    
 		{0.0, 0.0, 1.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {0.0, 1.0, 0.0},    
@@ -230,7 +243,7 @@ int main(void)
 	};
 
 	static GLfloat vdata_base[4][3] = {
-		{-2.0,-1.0,-2.0}, {2.0,-1.0,-2.0}, {2.0,-1.0,2.0}, {-2.0,-1.0,2.0}
+		{-2.0,-1.0,-2.0}, {-2.0,-1.0,2.0}, {2.0,-1.0,-2.0}, {2.0,-1.0,2.0}
 	};
 
 	static GLfloat cdata_base[4][3] = {    
@@ -254,6 +267,9 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, vertcolor_buffer);
     glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(cdata[0][0]), GL_STATIC_DRAW);
 
+	glBindBuffer(GL_ARRAY_BUFFER, vertnormal_buffer);
+	glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(vdata[0][0]), GL_STATIC_DRAW);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 60*sizeof(int), (void *)&(tindices[0][0]), GL_STATIC_DRAW);
 
@@ -267,6 +283,10 @@ int main(void)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
+	glBindBuffer(GL_ARRAY_BUFFER, vertnormal_buffer);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+
 
 	glGenBuffers(1, &vertpos_base_buffer);
     glGenBuffers(1, &vertcolor_base_buffer);
@@ -278,10 +298,10 @@ int main(void)
     // glGenBuffers(1, &normal_base_buffer);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertpos_base_buffer);
-	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(vdata_base[0][0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(GLfloat), (void* )&(vdata_base[0][0]), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertcolor_base_buffer);
-	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(cdata_base[0][0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(GLfloat), (void* )&(cdata_base[0][0]), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertpos_base_buffer);
 	glEnableVertexAttribArray(0);
@@ -292,7 +312,7 @@ int main(void)
 	glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	glBindBuffer(GL_ARRAY_BUFFER, normal_base_buffer);
-	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(float), (void* )&(normaldata_base[0][0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(GLfloat), (void* )&(normaldata_base[0][0]), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
@@ -315,15 +335,39 @@ int main(void)
 	time_location_gouraud = glGetUniformLocation(gouraudProgram, "time");
 	cameraPos_location_gouraud = glGetUniformLocation(gouraudProgram, "cameraPos");
 	lightPos_location_gouraud = glGetUniformLocation(gouraudProgram, "lightPos");
+	gouraudMaterial.materialAmbLocation = glGetUniformLocation(gouraudProgram, "material.ambient");
+	gouraudMaterial.materialDiffLocation = glGetUniformLocation(gouraudProgram, "material.diffuse");
+	gouraudMaterial.materialSpecLocation = glGetUniformLocation(gouraudProgram, "material.specular");
+	gouraudMaterial.materialShininessLocation = glGetUniformLocation(gouraudProgram, "material.shininess");
 
 	mvp_location_phong = glGetUniformLocation(phongProgram,"MVP");
 	time_location_phong = glGetUniformLocation(phongProgram, "time");
 	cameraPos_location_phong = glGetUniformLocation(phongProgram, "cameraPos");
 	lightPos_location_phong = glGetUniformLocation(phongProgram, "lightPos");
-	
+	phongMaterial.materialAmbLocation = glGetUniformLocation(phongProgram, "material.ambient");
+	phongMaterial.materialDiffLocation = glGetUniformLocation(phongProgram, "material.diffuse");
+	phongMaterial.materialSpecLocation = glGetUniformLocation(phongProgram, "material.specular");
+	phongMaterial.materialShininessLocation = glGetUniformLocation(phongProgram, "material.shininess");
+
+	// material properties
+	vec3 materialAmb = vec3(0.05, 0.0, 0.075);
+	vec3 materialDiff = vec3(0.67, 0.0, 1.0);
+	vec3 materialSpec = vec3(1.0, 1.0, 0.0);
+	float materialShininess = 0.05;
+	// send uniforms
 	lightPos = vec3(3.0f, 3.0f, 3.0f);
 	glUniform3fv(lightPos_location_gouraud, 1, &(lightPos)[0]);
 	glUniform3fv(lightPos_location_phong, 1, &(lightPos)[0]);
+
+	glUniform3fv(gouraudMaterial.materialAmbLocation, 1, &(materialAmb)[0] );
+	glUniform3fv(gouraudMaterial.materialDiffLocation, 1, &(materialDiff)[0] );
+	glUniform3fv(gouraudMaterial.materialSpecLocation, 1, &(materialSpec)[0] );
+	glUniform1f(gouraudMaterial.materialShininessLocation, materialShininess );
+
+	glUniform3fv(phongMaterial.materialAmbLocation, 1, &(materialAmb)[0] );
+	glUniform3fv(phongMaterial.materialDiffLocation, 1, &(materialDiff)[0] );
+	glUniform3fv(phongMaterial.materialSpecLocation, 1, &(materialSpec)[0] );
+	glUniform1f(phongMaterial.materialShininessLocation, materialShininess );
 
 	glClearColor(0.2,0.2,0.2,0);
 
@@ -381,8 +425,8 @@ int main(void)
     	glUniformMatrix4fv(mvp_location_gouraud, 1, GL_FALSE, &(mvp)[0][0]);
 		glUniformMatrix4fv(mvp_location_phong, 1, GL_FALSE, &(mvp)[0][0]);
 
-		// glBindVertexArray(groundVAO);
-		// glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0);
+		glBindVertexArray(groundVAO);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 6);
 
 	    glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
