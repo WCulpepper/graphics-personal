@@ -15,6 +15,9 @@
 GLuint gouraudProgram;
 GLuint phongProgram;
 
+GLint leftMouseButtonState;
+vec2 mousePosition = vec2(-1.0,-1.0);
+
 bool useGouraud = true;
 bool usePhongSpec = true;
 
@@ -132,6 +135,19 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		usePhongSpec = false;
 }
 
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+	if(button == GLFW_MOUSE_BUTTON_LEFT) {
+		leftMouseButtonState = action;
+	}
+}
+ 
+
+static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
+	if(mousePosition.x < 0 && mousePosition.y < 0) {
+		mousePosition = vec2(x, y);
+	}
+}
+
 void showFPS(GLFWwindow* window) {
         double currentTime = glfwGetTime();
         double delta = currentTime - lastTime;
@@ -196,6 +212,8 @@ int main(void)
         exit(EXIT_FAILURE);
     }
     glfwSetKeyCallback(window, key_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwMakeContextCurrent(window);
 
     glfwSwapInterval(1);
@@ -362,9 +380,7 @@ int main(void)
 	GLuint phongSpecPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "specularPhong");
 	GLuint blinnSpecPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "specularBlinnPhong");
 
-	cameraPos = vec3(2.0f, 1.5f, 2.0f);
-	glUniform3fv(cameraPos_location_gouraud, 1, &(cameraPos)[0]);
-	view = glm::lookAt(cameraPos, vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f));
+	
 	
     while (!glfwWindowShouldClose(window))
     {
@@ -378,7 +394,9 @@ int main(void)
 			// std::cout << "Using the Phong Shader\n";
 		}
 
-		
+		cameraPos = vec3(2.0f, 1.5f, 2.0f);
+		glUniform3fv(cameraPos_location_gouraud, 1, &(cameraPos)[0]);
+		view = glm::lookAt(cameraPos, vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f));
 
 		
 		glUniform1f(time_location_gouraud, glfwGetTime());
