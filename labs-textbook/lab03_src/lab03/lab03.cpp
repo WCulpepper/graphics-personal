@@ -15,7 +15,13 @@ using glm::mat4;
 using glm::mat3;
 using std::vector;
 
+// the X and Z values are for drawing an icosahedron
+#define IX 0.525731112119133606 
+#define IZ 0.850650808352039932
+
 int tessLevel;
+
+float ylevel = 0;
 
 GLuint program;
 
@@ -117,6 +123,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         tessLevel++;
     if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         tessLevel--;
+    if (key == GLFW_KEY_W && action == GLFW_PRESS)
+        ylevel += 1.0;
+    if (key == GLFW_KEY_S && action == GLFW_PRESS)
+        ylevel -= 1.0;
 }
 
 void showFPS(GLFWwindow* window) {
@@ -200,6 +210,10 @@ void readSurface(const char* filename)
 
 int main(void)
 {
+    GLuint vertpos_buffer;
+    GLuint vertcolor_buffer;
+    GLuint index_buffer;
+    GLuint icoVAO;
 	
     GLFWwindow* window;
 
@@ -253,6 +267,52 @@ int main(void)
     glEnable(GL_DEPTH_TEST);
 
     // setup buffers and send control points
+
+    // These are the 12 vertices for the icosahedron
+	static GLfloat vdata[12][3] = {    
+   	{-IX, 0.0, IZ}, {IX, 0.0, IZ}, {-IX, 0.0, -IZ}, {IX, 0.0, -IZ},    
+   	{0.0, IZ, IX}, {0.0, IZ, -IX}, {0.0, -IZ, IX}, {0.0, -IZ, -IX},    
+   	{IZ, IX, 0.0}, {-IZ, IX, 0.0}, {IZ, -IX, 0.0}, {-IZ, -IX, 0.0} 
+	};
+
+	// vertex colors
+	static GLfloat cdata[12][3] = {    
+   	{0.0, 0.0, 1.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {0.0, 1.0, 0.0},    
+   	{0.0, 1.0, 1.0}, {1.0, 0.0, 1.0}, {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0},
+	{1.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 1.0}, {1.0, 0.0, 1.0} 
+	};
+
+	// These are the 20 faces.  Each of the three entries for each 
+	// vertex gives the 3 vertices that make the face.
+	static GLint tindices[20][3] = { 
+   	{0,4,1}, {0,9,4}, {9,5,4}, {4,5,8}, {4,8,1},    
+   	{8,10,1}, {8,3,10}, {5,3,8}, {5,2,3}, {2,7,3},    
+   	{7,10,3}, {7,6,10}, {7,11,6}, {11,0,6}, {0,1,6}, 
+   	{6,1,10}, {9,0,11}, {9,11,2}, {9,2,5}, {7,2,11} };
+
+    glGenBuffers(1, &vertpos_buffer);
+    glGenBuffers(1, &vertcolor_buffer);
+    glGenBuffers(1, &index_buffer);
+
+	glGenVertexArrays(1, &icoVAO);
+	glBindVertexArray(icoVAO);
+	
+    glBindBuffer(GL_ARRAY_BUFFER, vertpos_buffer);
+    glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(vdata[0][0]), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertcolor_buffer);
+    glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(cdata[0][0]), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 60*sizeof(int), (void *)&(tindices[0][0]), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertpos_buffer);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertcolor_buffer);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
     // In an F-surface patch we have 4 control points and 8 partial derivatives (du and dv) in these control points
     // making a total of 12 vec3 info per patch
@@ -393,6 +453,15 @@ int main(void)
 
         view = glm::lookAt(cameraPos, vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f));
 
+        for(int i = 0; i < (**controlPoints).length(); i++) {
+            for(int j = 0; j < (*controlPoints[i]).length(); j++) {
+                model = mat4(1.0f);
+                model = glm::translate(model, controlPoints[i][j]);
+                glBindVertexArray(icoVAO);
+		        glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
+            }
+        }
+
         model = mat4(1.0f);
         //model = glm::translate(model, vec3(0.0f,-1.5f,0.0f));
         //model = glm::rotate(model,glm::radians(-90.0f), vec3(1.0f,0.0f,0.0f));
@@ -403,6 +472,8 @@ int main(void)
 
         mat4 mv = view * model;
         mat3 nm = mat3( vec3(mv[0]), vec3(mv[1]), vec3(mv[2]) );
+
+        glUniform1f(glGetUniformLocation(program,"height"), ylevel);
 
     	glUniformMatrix4fv(glGetUniformLocation(program,"ModelViewMatrix"), 1, GL_FALSE, &(mv)[0][0]);
     	glUniformMatrix3fv(glGetUniformLocation(program,"NormalMatrix"), 1, GL_FALSE, &(nm)[0][0]);

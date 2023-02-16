@@ -16,6 +16,7 @@ GLuint gouraudProgram;
 GLuint phongProgram;
 
 bool useGouraud = true;
+bool usePhongSpec = true;
 
 int lastTime;
 int nFrames;
@@ -27,6 +28,7 @@ int shaderSubroutine = 1;
 using glm::vec3;
 using glm::vec4;
 using glm::mat4;
+using namespace glm;
 
 void readShader(const char* fname, char *source)
 {
@@ -124,6 +126,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		useGouraud = true;
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
 		useGouraud = false;
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+		usePhongSpec = true;
+	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+		usePhongSpec = false;
 }
 
 void showFPS(GLFWwindow* window) {
@@ -143,15 +149,6 @@ void showFPS(GLFWwindow* window) {
     
 int main(void)
 {	
-	struct ShaderMaterial {
-		GLuint materialAmbLocation;
-		GLuint materialDiffLocation;
-		GLuint materialSpecLocation;
-		GLuint materialShininessLocation;
-	};
-
-	ShaderMaterial gouraudMaterial;
-	ShaderMaterial phongMaterial; 
 
     GLFWwindow* window;
 
@@ -169,11 +166,15 @@ int main(void)
     int i,j,c;
 
     GLint mvp_location_gouraud;
+	GLint model_location_gouraud;
+	GLint normal_location_gouraud;
 	GLint time_location_gouraud;
 	GLint cameraPos_location_gouraud;
 	GLint lightPos_location_gouraud;
 
 	GLint mvp_location_phong;
+	GLint model_location_phong;
+	GLint normal_location_phong;
 	GLint time_location_phong;
 	GLint cameraPos_location_phong;
 	GLint lightPos_location_phong;
@@ -257,6 +258,7 @@ int main(void)
     glGenBuffers(1, &vertpos_buffer);
     glGenBuffers(1, &vertcolor_buffer);
     glGenBuffers(1, &index_buffer);
+	glGenBuffers(1, &vertnormal_buffer);
 
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
@@ -290,6 +292,8 @@ int main(void)
 
 	glGenBuffers(1, &vertpos_base_buffer);
     glGenBuffers(1, &vertcolor_base_buffer);
+	glGenBuffers(1, &normal_base_buffer);
+	
 	// ground VAO/VBO
 	glGenVertexArrays(1, &groundVAO);
     glBindVertexArray(groundVAO);
@@ -328,46 +332,21 @@ int main(void)
 	
     vec3 cameraPos, lightPos;
     mat4 mvp,view,projection, model;
+	mat3 normalMtx;
 
 	
 
     mvp_location_gouraud = glGetUniformLocation(gouraudProgram,"MVP");
+	model_location_gouraud = glGetUniformLocation(gouraudProgram, "modelMtx");
+	normal_location_gouraud = glGetUniformLocation(gouraudProgram, "normalMtx");
 	time_location_gouraud = glGetUniformLocation(gouraudProgram, "time");
 	cameraPos_location_gouraud = glGetUniformLocation(gouraudProgram, "cameraPos");
-	lightPos_location_gouraud = glGetUniformLocation(gouraudProgram, "lightPos");
-	gouraudMaterial.materialAmbLocation = glGetUniformLocation(gouraudProgram, "material.ambient");
-	gouraudMaterial.materialDiffLocation = glGetUniformLocation(gouraudProgram, "material.diffuse");
-	gouraudMaterial.materialSpecLocation = glGetUniformLocation(gouraudProgram, "material.specular");
-	gouraudMaterial.materialShininessLocation = glGetUniformLocation(gouraudProgram, "material.shininess");
 
 	mvp_location_phong = glGetUniformLocation(phongProgram,"MVP");
+	model_location_phong = glGetUniformLocation(phongProgram, "modelMtx");
+	normal_location_phong = glGetUniformLocation(phongProgram, "normalMtx");
 	time_location_phong = glGetUniformLocation(phongProgram, "time");
 	cameraPos_location_phong = glGetUniformLocation(phongProgram, "cameraPos");
-	lightPos_location_phong = glGetUniformLocation(phongProgram, "lightPos");
-	phongMaterial.materialAmbLocation = glGetUniformLocation(phongProgram, "material.ambient");
-	phongMaterial.materialDiffLocation = glGetUniformLocation(phongProgram, "material.diffuse");
-	phongMaterial.materialSpecLocation = glGetUniformLocation(phongProgram, "material.specular");
-	phongMaterial.materialShininessLocation = glGetUniformLocation(phongProgram, "material.shininess");
-
-	// material properties
-	vec3 materialAmb = vec3(0.05, 0.0, 0.075);
-	vec3 materialDiff = vec3(0.67, 0.0, 1.0);
-	vec3 materialSpec = vec3(1.0, 1.0, 0.0);
-	float materialShininess = 0.05;
-	// send uniforms
-	lightPos = vec3(3.0f, 3.0f, 3.0f);
-	glUniform3fv(lightPos_location_gouraud, 1, &(lightPos)[0]);
-	glUniform3fv(lightPos_location_phong, 1, &(lightPos)[0]);
-
-	glUniform3fv(gouraudMaterial.materialAmbLocation, 1, &(materialAmb)[0] );
-	glUniform3fv(gouraudMaterial.materialDiffLocation, 1, &(materialDiff)[0] );
-	glUniform3fv(gouraudMaterial.materialSpecLocation, 1, &(materialSpec)[0] );
-	glUniform1f(gouraudMaterial.materialShininessLocation, materialShininess );
-
-	glUniform3fv(phongMaterial.materialAmbLocation, 1, &(materialAmb)[0] );
-	glUniform3fv(phongMaterial.materialDiffLocation, 1, &(materialDiff)[0] );
-	glUniform3fv(phongMaterial.materialSpecLocation, 1, &(materialSpec)[0] );
-	glUniform1f(phongMaterial.materialShininessLocation, materialShininess );
 
 	glClearColor(0.2,0.2,0.2,0);
 
@@ -378,8 +357,10 @@ int main(void)
     tPrev = 0;
     rotSpeed = glm::pi<float>()/800.0f;
 
-	// GLuint passThroughIndexGouraud = glGetSubroutineIndex(gouraudProgram, GL_VERTEX_SHADER, "passThrough");
-	// GLuint passThroughIndexPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "passThrough");
+	GLuint phongSpecGouraud = glGetSubroutineIndex(gouraudProgram, GL_VERTEX_SHADER, "specularPhong");
+	GLuint blinnSpecGouraud = glGetSubroutineIndex(gouraudProgram, GL_VERTEX_SHADER, "specularBlinnPhong");
+	GLuint phongSpecPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "specularPhong");
+	GLuint blinnSpecPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "specularBlinnPhong");
 
 	cameraPos = vec3(2.0f, 1.5f, 2.0f);
 	glUniform3fv(cameraPos_location_gouraud, 1, &(cameraPos)[0]);
@@ -387,6 +368,7 @@ int main(void)
 	
     while (!glfwWindowShouldClose(window))
     {
+		model = mat4(1.0f);
 		
 		if(useGouraud) {
 			glUseProgram(gouraudProgram);
@@ -398,7 +380,7 @@ int main(void)
 
 		
 
-		model = mat4(1.0f);
+		
 		glUniform1f(time_location_gouraud, glfwGetTime());
 		glUniform1f(time_location_phong, glfwGetTime());
         float ratio;
@@ -421,12 +403,27 @@ int main(void)
     	projection = glm::perspective(glm::radians(45.0f), (float)width/height, 0.3f, 100.0f);
 		model = glm::rotate(model, angle, vec3(0.0f, 1.0f, 0.0f));
     	mvp = projection * view * model;
+		normalMtx = mat3(glm::transpose(glm::inverse(model)));
 
     	glUniformMatrix4fv(mvp_location_gouraud, 1, GL_FALSE, &(mvp)[0][0]);
 		glUniformMatrix4fv(mvp_location_phong, 1, GL_FALSE, &(mvp)[0][0]);
 
+		glUniformMatrix4fv(model_location_gouraud, 1, GL_FALSE, &(model)[0][0]);
+		glUniformMatrix4fv(model_location_phong, 1, GL_FALSE, &(model)[0][0]);
+
+		glUniformMatrix4fv(normal_location_gouraud, 1, GL_FALSE, &(normalMtx)[0][0]);
+		glUniformMatrix4fv(normal_location_phong, 1, GL_FALSE, &(normalMtx)[0][0]);
+
+		if(usePhongSpec) {
+			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &phongSpecGouraud);
+			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &phongSpecPhong);
+		} else {
+			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &blinnSpecGouraud);
+			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &blinnSpecPhong);
+		}
+
 		glBindVertexArray(groundVAO);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 6);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	    glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
