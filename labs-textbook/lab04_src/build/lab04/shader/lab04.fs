@@ -6,6 +6,8 @@ out vec4 fragColor;
 vec3 gradients[16];
 int table[16];
 
+
+
 void init() {
     int i;
     gradients[0] = vec3(0, -1, -1);
@@ -75,16 +77,27 @@ float perlin(vec3 pos, float scalingFactor)
         }
     }
 
-    return (n + 1.) / 2.;
+    // return (n + 1.) / 2.;
+    return abs(n);
 }
 
 void main(void)
 {
-
+    
     float a = 0;
 
     init();
     
-    a = perlin(texCoord,5);
-    fragColor = vec4(a, a, a, 1);
+    for(int i = 0; i <=4; ++i) {
+        a += perlin(texCoord, pow(2, i))*pow(2, -i);
+    }
+
+    a = pow(a, 2);
+
+    if(a < 0.01) 
+        discard;
+    
+    a = (log(a) - log(1e-1)) / (log(1) - log(1e-1));
+    // a = perlin(texCoord,5);
+    fragColor = vec4(1, 1, 1, 1)*a;
 }

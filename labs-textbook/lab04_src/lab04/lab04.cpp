@@ -20,8 +20,10 @@
 
 using namespace std;
 
+float angle = 0.0;
+
 GLuint gVAO, gPrg;
-GLint gViewingMatrixLoc, gProjectionMatrixLoc;
+GLint gViewingMatrixLoc, gProjectionMatrixLoc, modelingMatrixLoc;
 int gIndexCount;
 int gWidth, gHeight;
 bool gLeftPressed = false, gResChange = false;
@@ -137,6 +139,7 @@ void initShaders()
 
 	gViewingMatrixLoc = glGetUniformLocation(gPrg, "viewingMatrix");
 	gProjectionMatrixLoc = glGetUniformLocation(gPrg, "projectionMatrix");
+    modelingMatrixLoc = glGetUniformLocation(gPrg, "modelMatrix");
 
     glUseProgram(gPrg);
 }
@@ -206,15 +209,22 @@ void init()
 
 void drawModels()
 {
+    angle += 0.1;
     glUseProgram(gPrg);
     glBindVertexArray(gVAO);
 
     float fovyRad = (float) (45.0 / 180.0) * M_PI;
+
+    glm::mat4 modelingMatrix = glm::translate(glm::mat4(1), glm::vec3(0.5, 0.5, 0.5));
+    modelingMatrix = glm::rotate(modelingMatrix, glm::radians(angle), glm::vec3(0, 1, 1));
+    modelingMatrix = glm::scale(modelingMatrix, glm::vec3(1, -1, 1)); 
+    modelingMatrix = glm::translate(modelingMatrix, glm::vec3(-0.5, -0.5, -0.5)); 
     glm::mat4 viewingMatrix = glm::lookAt(gEyePos, gEyePos + gGaze, gUp);
     glm::mat4 projectionMatrix = glm::perspective(fovyRad, 1.0f, 0.1f, 30.0f);
 
 	glUniformMatrix4fv(gProjectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 	glUniformMatrix4fv(gViewingMatrixLoc, 1, GL_FALSE, glm::value_ptr(viewingMatrix));
+    glUniformMatrix4fv(modelingMatrixLoc, 1, GL_FALSE, glm::value_ptr(modelingMatrix));
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
