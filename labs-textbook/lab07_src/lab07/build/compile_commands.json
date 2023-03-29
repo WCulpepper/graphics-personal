@@ -1,0 +1,7 @@
+[
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab07_src/lab07/build",
+  "command": "C:\\w64devkit\\bin\\g++.exe -DGLFW_INCLUDE_NONE  -g -o CMakeFiles\\lab07.dir\\lab07.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab07_src\\lab07\\lab07.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab07_src/lab07/lab07.cpp"
+}
+]
