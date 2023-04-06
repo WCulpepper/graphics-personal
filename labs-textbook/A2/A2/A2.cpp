@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/gtc/noise.hpp>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
@@ -8,6 +9,7 @@
 #include <iostream>
 
 #include "teapotdata.h"
+#include "texture.h"
 #include "teapotpatch.h"
 
 // the X and Z values are for drawing an icosahedron
@@ -143,7 +145,7 @@ void initShaders()
 	glAttachShader(teapotProgram,tesTeapot);
 
 	glLinkProgram(phongProgram);
-	// glLinkProgram(teapotProgram); 
+	glLinkProgram(teapotProgram); 
 
 	glUseProgram(phongProgram);
 	
@@ -233,7 +235,6 @@ int main(void)
 	GLint viewport_location;
 	GLint cameraPos_location_phong;
 	GLint lineWidth_location, lineColor_location;
-	GLint tesslevel_location;
 
 	lastTime = 0;
 	nFrames = 0;
@@ -256,8 +257,6 @@ int main(void)
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
 	glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwMakeContextCurrent(window);
-
-	std::cout << "Setup callbacks\n";
     glfwSwapInterval(1);
 
 	gladLoadGL();
@@ -277,7 +276,6 @@ int main(void)
 	printf("GL Version (integer) : %d.%d\n", major, minor);
 	printf("GLSL Version         : %s\n", glslVersion);
 	
-	std::cout << "Setting up buffers...\n";
 	// These are the 12 vertices for the icosahedron
 	static GLfloat vdata_ico[12][3] = {    
 		{-IX, 0.0, IZ}, {IX, 0.0, IZ}, {-IX, 0.0, -IZ}, {IX, 0.0, -IZ},    
@@ -561,9 +559,64 @@ int main(void)
 	glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	glBindVertexArray(0);
-	
+	int width, height = 100;
+	int a = 1; 
+	int b = 1;
+	GLubyte *data = new GLubyte[ width * height * 4 ];
+	float xFactor = 1.0f / (width - 1);
+	float yFactor = 1.0f / (height - 1);
+	for( int row = 0; row < height; row++ ) {
+		for( int col = 0 ; col < width; col++ ) {
+			float x = xFactor * col;
+			float y = yFactor * row;
+			float sum = 0.0f;
+			float freq = a;
+			float scale = b;
+			// Compute the sum for each octave
+			for( int oct = 0; oct < 4; oct++ ) {
+				glm::vec2 p(x * freq, y * freq);
+				float val = glm::perlin(p) / scale;
+				sum += val;
+				float result = (sum + 1.0f)/ 2.0f;
+				// Store in texture buffer
+				data[((row * width + col) * 4) + oct] =
+				(GLubyte) ( result * 255.0f );
+				freq *= 2.0f; // Double the frequency
+				scale *= b; // Next power of b
+			}
+		}
+	}
 
-	std::cout << "Buffers bound\n";
+	width = height = 0;
+
+	
+	GLfloat tex_coords[] = {
+		0.0f, 0.0f,
+		1.0f, 0.0f,
+		0.5f, 1.0f
+	};
+
+	GLuint texCoord_buffer;
+	glGenBuffers(1, &texCoord_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, texCoord_buffer);
+	glBufferData(GL_ARRAY_BUFFER, 6*sizeof(GLfloat), (void *)&(tex_coords), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, texCoord_buffer);
+	glEnableVertexAttribArray(2);
+    glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+
+	GLuint texID;
+	glGenTextures(1, &texID);
+	glBindTexture(GL_TEXTURE_2D, texID);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texID);
+
+	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), texID);
+	
 
     initShaders();
 
@@ -585,7 +638,6 @@ int main(void)
 	cameraPos_location_phong = glGetUniformLocation(phongProgram, "cameraPos");
 	lineWidth_location = glGetUniformLocation(phongProgram, "Line.width");
 	lineColor_location = glGetUniformLocation(phongProgram, "Line.color");
-	tesslevel_location = glGetUniformLocation(phongProgram, "tessLevel");
 	
 	glClearColor(0.1,0.1,0.1,0);
 
@@ -611,7 +663,6 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
 		model = mat4(1.0f);
-		
 		glUseProgram(phongProgram);
 
 		
@@ -622,7 +673,6 @@ int main(void)
 		glUniform1f(lineWidth_location, 0.8f);
 		
         float ratio;
-        int width, height;
         glfwGetFramebufferSize(window, &width, &height);
         glViewport(0, 0, width, height);
 
@@ -658,8 +708,10 @@ int main(void)
 		glUniformMatrix4fv(normal_location_phong, 1, GL_FALSE, &(normalMtx)[0][0]);
 		glUniformMatrix4fv(viewport_location, 1, GL_FALSE, &(viewport)[0][0]);
 
+		glm::mat3 nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+
 		glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"ModelViewMatrix"), 1, GL_FALSE, &(mv)[0][0]);
-    	glUniformMatrix3fv(glGetUniformLocation(teapotProgram,"NormalMatrix"), 1, GL_FALSE, &(normalMtx)[0][0]);
+    	glUniformMatrix3fv(glGetUniformLocation(teapotProgram,"NormalMatrix"), 1, GL_FALSE, &(nm)[0][0]);
     	glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"MVP"), 1, GL_FALSE, &(mvp)[0][0]);
     	glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"ViewportMatrix"), 1, GL_FALSE, &(viewport)[0][0]);
 
@@ -673,6 +725,9 @@ int main(void)
 
 		glBindVertexArray(groundVAO);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+
+		
 
 		switch(modelToRender){
 			case 1: 

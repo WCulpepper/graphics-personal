@@ -5,6 +5,7 @@
 #include "cookbookogl.h"
 
 #include <cstdio>
+#include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
 using glm::mat4;

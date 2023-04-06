@@ -41,5 +41,6 @@ void main()
     float mixVal = edgeMix();
     vec4 color = vec4( diffuseModel( Position.xyz, Normal ), 1.0);
     color = pow( color, vec4(1.0/2.2) );
-    FragColor = mix( color, LineColor, mixVal );
+    // FragColor = mix( color, LineColor, mixVal );
+    FragColor = vec4(1.0,1.0,1.0, 1.0);
 }

@@ -41,7 +41,7 @@
 						"kernel32"
 					]
 				},
-				"path" : "C:/w64devkit/bin/gcc.exe",
+				"path" : "C:/w64devkit/bin/cc.exe",
 				"version" : "12.2.0"
 			},
 			"language" : "C",
@@ -94,7 +94,7 @@
 						"kernel32"
 					]
 				},
-				"path" : "C:/w64devkit/bin/g++.exe",
+				"path" : "C:/w64devkit/bin/c++.exe",
 				"version" : "12.2.0"
 			},
 			"language" : "CXX",

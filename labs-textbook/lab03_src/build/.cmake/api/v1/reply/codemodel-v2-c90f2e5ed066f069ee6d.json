@@ -12,7 +12,7 @@
 						2,
 						3
 					],
-					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"jsonFile" : "directory-.-d0094a50bb2071803777.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.0"
@@ -22,7 +22,7 @@
 				},
 				{
 					"build" : "ingredients",
-					"jsonFile" : "directory-ingredients-Debug-68073b56cb467efde5a6.json",
+					"jsonFile" : "directory-ingredients-68073b56cb467efde5a6.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.0"
@@ -37,7 +37,7 @@
 				},
 				{
 					"build" : "lab03",
-					"jsonFile" : "directory-lab03-Debug-777765ceb2c4f9debd01.json",
+					"jsonFile" : "directory-lab03-777765ceb2c4f9debd01.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.0"
@@ -52,7 +52,7 @@
 				},
 				{
 					"build" : "lab03_teapot",
-					"jsonFile" : "directory-lab03_teapot-Debug-7134edb531b7345e5dd4.json",
+					"jsonFile" : "directory-lab03_teapot-7134edb531b7345e5dd4.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.0"
@@ -66,7 +66,7 @@
 					]
 				}
 			],
-			"name" : "Debug",
+			"name" : "",
 			"projects" : 
 			[
 				{
@@ -91,21 +91,21 @@
 				{
 					"directoryIndex" : 1,
 					"id" : "ingredients::@1bb7604bb9b5839c4d98",
-					"jsonFile" : "target-ingredients-Debug-7ea6ce26037e366c3b47.json",
+					"jsonFile" : "target-ingredients-8cdb257e02092eda4024.json",
 					"name" : "ingredients",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 2,
 					"id" : "lab03::@53bdf58c765b4b8070a1",
-					"jsonFile" : "target-lab03-Debug-c157e12f437107046d44.json",
+					"jsonFile" : "target-lab03-44aa152b22a02ecc7758.json",
 					"name" : "lab03",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 3,
 					"id" : "lab03_teapot::@0b99d8efcedef79ac9d0",
-					"jsonFile" : "target-lab03_teapot-Debug-368cb7bbd2c4ba6adb3f.json",
+					"jsonFile" : "target-lab03_teapot-2b6fddc69dd337a4c91a.json",
 					"name" : "lab03_teapot",
 					"projectIndex" : 0
 				}
