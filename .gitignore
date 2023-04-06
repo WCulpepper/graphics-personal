@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Environment-Specific files
+*.zip
+build
+.vscode
