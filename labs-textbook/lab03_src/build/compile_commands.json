@@ -1,0 +1,87 @@
+[
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\teapotpatch.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\teapotpatch.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/teapotpatch.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\teapot.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\teapot.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/teapot.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\torus.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\torus.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/torus.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\glutils.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\glutils.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/glutils.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\objmesh.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\objmesh.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/objmesh.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\glslprogram.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\glslprogram.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/glslprogram.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\cube.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\cube.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/cube.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\plane.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\plane.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/plane.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\sphere.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\sphere.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/sphere.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\gcc.exe  @CMakeFiles/ingredients.dir/includes_C.rsp -g -o CMakeFiles\\ingredients.dir\\glad\\src\\glad.c.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\glad\\src\\glad.c",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/glad/src/glad.c"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\trianglemesh.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\trianglemesh.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/trianglemesh.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\texture.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\texture.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/texture.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\grid.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\grid.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/grid.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\skybox.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\skybox.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/skybox.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/ingredients",
+  "command": "C:\\w64devkit\\bin\\g++.exe  @CMakeFiles/ingredients.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\ingredients.dir\\stbimpl.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\ingredients\\stbimpl.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/ingredients/stbimpl.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/lab03",
+  "command": "C:\\w64devkit\\bin\\g++.exe -DGLFW_INCLUDE_NONE @CMakeFiles/lab03.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\lab03.dir\\lab03.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\lab03\\lab03.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/lab03/lab03.cpp"
+},
+{
+  "directory": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build/lab03_teapot",
+  "command": "C:\\w64devkit\\bin\\g++.exe -DGLFW_INCLUDE_NONE @CMakeFiles/lab03_teapot.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\lab03_teapot.dir\\lab03.cpp.obj -c C:\\Users\\wacul\\Documents\\graphics-personal\\labs-textbook\\lab03_src\\lab03_teapot\\lab03.cpp",
+  "file": "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/lab03_teapot/lab03.cpp"
+}
+]

@@ -3,12 +3,13 @@
 layout( triangles ) in;
 layout( triangle_strip, max_vertices = 3 ) out;
 
-out vec3 gNormal;
-out vec3 gPosition;
+layout (location = 0) out vec3 gNormal;
+layout (location = 1) out vec3 gPosition;
 noperspective out vec3 gEdgeDistance;
 
-in vec3 vNorm[];
-in vec3 vPos[];
+layout (location = 0) in vec3 vPos[];
+layout (location = 1) in vec3 vNorm[];
+
 
 uniform mat4 viewportMatrix; // viewport matrix
 

@@ -1,0 +1,126 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3
+					],
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "ingredients",
+					"jsonFile" : "directory-ingredients-Debug-68073b56cb467efde5a6.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "ingredients",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "lab03",
+					"jsonFile" : "directory-lab03-Debug-777765ceb2c4f9debd01.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "lab03",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "lab03_teapot",
+					"jsonFile" : "directory-lab03_teapot-Debug-7134edb531b7345e5dd4.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "lab03_teapot",
+					"targetIndexes" : 
+					[
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					],
+					"name" : "lab03",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "ingredients::@1bb7604bb9b5839c4d98",
+					"jsonFile" : "target-ingredients-Debug-7ea6ce26037e366c3b47.json",
+					"name" : "ingredients",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "lab03::@53bdf58c765b4b8070a1",
+					"jsonFile" : "target-lab03-Debug-c157e12f437107046d44.json",
+					"name" : "lab03",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "lab03_teapot::@0b99d8efcedef79ac9d0",
+					"jsonFile" : "target-lab03_teapot-Debug-368cb7bbd2c4ba6adb3f.json",
+					"name" : "lab03_teapot",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src/build",
+		"source" : "C:/Users/wacul/Documents/graphics-personal/labs-textbook/lab03_src"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 4
+	}
+}

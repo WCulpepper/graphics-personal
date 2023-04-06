@@ -7,6 +7,7 @@
 #include <math.h>
 #include <iostream>
 
+#include "teapotdata.h"
 #include "teapotpatch.h"
 
 // the X and Z values are for drawing an icosahedron
@@ -37,13 +38,13 @@ using namespace glm;
 GLint leftMouseButtonState;
 glm::vec2 mousePosition = vec2(-1.0,-1.0);
 
-float perlin(float x, float y, float z) {
-	float x_cube = x % 1.0f;
-	float y_cube = y % 1.0f;
-	float z_cube = z % 1.0f;
+// float perlin(float x, float y, float z) {
+// 	float x_cube = x % 1.0f;
+// 	float y_cube = y % 1.0f;
+// 	float z_cube = z % 1.0f;
 
-	return 0.0f;
-}
+// 	return 0.0f;
+// }
 
 void readShader(const char* fname, char *source)
 {
@@ -142,7 +143,7 @@ void initShaders()
 	glAttachShader(teapotProgram,tesTeapot);
 
 	glLinkProgram(phongProgram);
-	glLinkProgram(teapotProgram); 
+	// glLinkProgram(teapotProgram); 
 
 	glUseProgram(phongProgram);
 	
@@ -173,7 +174,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
 	if(button == GLFW_MOUSE_BUTTON_LEFT) {
 		leftMouseButtonState = action;
-	}
+	} 
 }
  
 
@@ -205,7 +206,6 @@ void showFPS(GLFWwindow* window) {
     
 int main(void)
 {	
-
     GLFWwindow* window;
 
     GLuint ico_vertpos_buffer;
@@ -217,6 +217,10 @@ int main(void)
 	GLuint cube_normal_buffer;
 	GLuint cube_index_buffer;
 	GLuint cubeVAO;
+
+	GLuint teapot_patches_buffer;
+	GLuint teapot_controlPoints_buffer;
+	GLuint teapotVAO;
 
 	GLuint vertpos_base_buffer;
 	GLuint normal_base_buffer;
@@ -244,6 +248,7 @@ int main(void)
     window = glfwCreateWindow(1200, 600, "Icosahedron", NULL, NULL);
     if (!window)
     {
+		std::cout << "Error setting up winodow\n";
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
@@ -252,6 +257,7 @@ int main(void)
 	glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwMakeContextCurrent(window);
 
+	std::cout << "Setup callbacks\n";
     glfwSwapInterval(1);
 
 	gladLoadGL();
@@ -271,7 +277,7 @@ int main(void)
 	printf("GL Version (integer) : %d.%d\n", major, minor);
 	printf("GLSL Version         : %s\n", glslVersion);
 	
-
+	std::cout << "Setting up buffers...\n";
 	// These are the 12 vertices for the icosahedron
 	static GLfloat vdata_ico[12][3] = {    
 		{-IX, 0.0, IZ}, {IX, 0.0, IZ}, {-IX, 0.0, -IZ}, {IX, 0.0, -IZ},    
@@ -306,6 +312,158 @@ int main(void)
             4, 5, 6, 4, 6, 7, 
             0, 4, 3, 4, 7, 3 };
 
+	int teapot_patches[][16] =
+	{
+		/* rim */
+		{102, 103, 104, 105, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+		/* body */
+		{12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27},
+		{24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40},
+		/* lid */
+		{96, 96, 96, 96, 97, 98, 99, 100, 101, 101, 101, 101, 0, 1, 2, 3,},
+		{0, 1, 2, 3, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117},
+		/* bottom */
+		{118, 118, 118, 118, 124, 122, 119, 121, 123, 126, 125, 120, 40, 39, 38, 37},
+		/* handle */
+		{41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56},
+		{53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 28, 65, 66, 67},
+		/* spout */
+		{68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83},
+		{80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95}
+	};
+
+
+	float teapot_controlPoints[][3] =
+	{
+		{0.2f, 0.f, 2.7f},
+		{0.2f, -0.112f, 2.7f},
+		{0.112f, -0.2f, 2.7f},
+		{0.f, -0.2f, 2.7f},
+		{1.3375f, 0.f, 2.53125f},
+		{1.3375f, -0.749f, 2.53125f},
+		{0.749f, -1.3375f, 2.53125f},
+		{0.f, -1.3375f, 2.53125f},
+		{1.4375f, 0.f, 2.53125f},
+		{1.4375f, -0.805f, 2.53125f},
+		{0.805f, -1.4375f, 2.53125f},
+		{0.f, -1.4375f, 2.53125f},
+		{1.5f, 0.f, 2.4f},
+		{1.5f, -0.84f, 2.4f},
+		{0.84f, -1.5f, 2.4f},
+		{0.f, -1.5f, 2.4f},
+		{1.75f, 0.f, 1.875f},
+		{1.75f, -0.98f, 1.875f},
+		{0.98f, -1.75f, 1.875f},
+		{0.f, -1.75f, 1.875f},
+		{2.f, 0.f, 1.35f},
+		{2.f, -1.12f, 1.35f},
+		{1.12f, -2.f, 1.35f},
+		{0.f, -2.f, 1.35f},
+		{2.f, 0.f, 0.9f},
+		{2.f, -1.12f, 0.9f},
+		{1.12f, -2.f, 0.9f},
+		{0.f, -2.f, 0.9f},
+		{-2.f, 0.f, 0.9f},
+		{2.f, 0.f, 0.45f},
+		{2.f, -1.12f, 0.45f},
+		{1.12f, -2.f, 0.45f},
+		{0.f, -2.f, 0.45f},
+		{1.5f, 0.f, 0.225f},
+		{1.5f, -0.84f, 0.225f},
+		{0.84f, -1.5f, 0.225f},
+		{0.f, -1.5f, 0.225f},
+		{1.5f, 0.f, 0.15f},
+		{1.5f, -0.84f, 0.15f},
+		{0.84f, -1.5f, 0.15f},
+		{0.f, -1.5f, 0.15f},
+		{-1.6f, 0.f, 2.025f},
+		{-1.6f, -0.3f, 2.025f},
+		{-1.5f, -0.3f, 2.25f},
+		{-1.5f, 0.f, 2.25f},
+		{-2.3f, 0.f, 2.025f},
+		{-2.3f, -0.3f, 2.025f},
+		{-2.5f, -0.3f, 2.25f},
+		{-2.5f, 0.f, 2.25f},
+		{-2.7f, 0.f, 2.025f},
+		{-2.7f, -0.3f, 2.025f},
+		{-3.f, -0.3f, 2.25f},
+		{-3.f, 0.f, 2.25f},
+		{-2.7f, 0.f, 1.8f},
+		{-2.7f, -0.3f, 1.8f},
+		{-3.f, -0.3f, 1.8f},
+		{-3.f, 0.f, 1.8f},
+		{-2.7f, 0.f, 1.575f},
+		{-2.7f, -0.3f, 1.575f},
+		{-3.f, -0.3f, 1.35f},
+		{-3.f, 0.f, 1.35f},
+		{-2.5f, 0.f, 1.125f},
+		{-2.5f, -0.3f, 1.125f},
+		{-2.65f, -0.3f, 0.9375f},
+		{-2.65f, 0.f, 0.9375f},
+		{-2.f, -0.3f, 0.9f},
+		{-1.9f, -0.3f, 0.6f},
+		{-1.9f, 0.f, 0.6f},
+		{1.7f, 0.f, 1.425f},
+		{1.7f, -0.66f, 1.425f},
+		{1.7f, -0.66f, 0.6f},
+		{1.7f, 0.f, 0.6f},
+		{2.6f, 0.f, 1.425f},
+		{2.6f, -0.66f, 1.425f},
+		{3.1f, -0.66f, 0.825f},
+		{3.1f, 0.f, 0.825f},
+		{2.3f, 0.f, 2.1f},
+		{2.3f, -0.25f, 2.1f},
+		{2.4f, -0.25f, 2.025f},
+		{2.4f, 0.f, 2.025f},
+		{2.7f, 0.f, 2.4f},
+		{2.7f, -0.25f, 2.4f},
+		{3.3f, -0.25f, 2.4f},
+		{3.3f, 0.f, 2.4f},
+		{2.8f, 0.f, 2.475f},
+		{2.8f, -0.25f, 2.475f},
+		{3.525f, -0.25f, 2.49375f},
+		{3.525f, 0.f, 2.49375f},
+		{2.9f, 0.f, 2.475f},
+		{2.9f, -0.15f, 2.475f},
+		{3.45f, -0.15f, 2.5125f},
+		{3.45f, 0.f, 2.5125f},
+		{2.8f, 0.f, 2.4f},
+		{2.8f, -0.15f, 2.4f},
+		{3.2f, -0.15f, 2.4f},
+		{3.2f, 0.f, 2.4f},
+		{0.f, 0.f, 3.15f},
+		{0.8f, 0.f, 3.15f},
+		{0.8f, -0.45f, 3.15f},
+		{0.45f, -0.8f, 3.15f},
+		{0.f, -0.8f, 3.15f},
+		{0.f, 0.f, 2.85f},
+		{1.4f, 0.f, 2.4f},
+		{1.4f, -0.784f, 2.4f},
+		{0.784f, -1.4f, 2.4f},
+		{0.f, -1.4f, 2.4f},
+		{0.4f, 0.f, 2.55f},
+		{0.4f, -0.224f, 2.55f},
+		{0.224f, -0.4f, 2.55f},
+		{0.f, -0.4f, 2.55f},
+		{1.3f, 0.f, 2.55f},
+		{1.3f, -0.728f, 2.55f},
+		{0.728f, -1.3f, 2.55f},
+		{0.f, -1.3f, 2.55f},
+		{1.3f, 0.f, 2.4f},
+		{1.3f, -0.728f, 2.4f},
+		{0.728f, -1.3f, 2.4f},
+		{0.f, -1.3f, 2.4f},
+		{0.f, 0.f, 0.f},
+		{1.425f, -0.798f, 0.f},
+		{1.5f, 0.f, 0.075f},
+		{1.425f, 0.f, 0.f},
+		{0.798f, -1.425f, 0.f},
+		{0.f, -1.5f, 0.075f},
+		{0.f, -1.425f, 0.f},
+		{1.5f, -0.84f, 0.075f},
+		{0.84f, -1.5f, 0.075f}
+	};
+
 	static GLfloat vdata_base[4][3] = {
 		{-2.0,-1.0,-2.0}, {-2.0,-1.0,2.0}, {2.0,-1.0,-2.0}, {2.0,-1.0,2.0}
 	};
@@ -313,6 +471,8 @@ int main(void)
 	static GLfloat normaldata_base[4][3] {
 		{0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}
 	};
+
+
 	
 	// ICOSAHEDRON BUFFERS
     glGenBuffers(1, &ico_vertpos_buffer);
@@ -337,8 +497,8 @@ int main(void)
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	glBindBuffer(GL_ARRAY_BUFFER, ico_normal_buffer);
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	// CUBE BUFFERS
 	glGenBuffers(1, &cube_vertpos_buffer);
@@ -363,8 +523,19 @@ int main(void)
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	glBindBuffer(GL_ARRAY_BUFFER, cube_normal_buffer);
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+
+	// glGenBuffers(1, &teapot_controlPoints_buffer);
+	// glGenBuffers(1, &teapot_patches_buffer);
+
+	// glGenVertexArrays(1, &teapotVAO);
+	// glBindVertexArray(teapotVAO);
+
+	// glBindBuffer(GL_ARRAY_BUFFER, teapot_controlPoints_buffer);
+	// glBufferData(GL_ARRAY_BUFFER, (463-337)*sizeof(float), (void*)&(teapot_controlPoints), GL_STATIC_DRAW);
+
+	// glBindBuffer(GL_ARRAY_BUFFER)
 
 	glGenBuffers(1, &vertpos_base_buffer);
 	glGenBuffers(1, &normal_base_buffer);
@@ -386,11 +557,13 @@ int main(void)
 	glBindBuffer(GL_ARRAY_BUFFER, normal_base_buffer);
 	glBufferData(GL_ARRAY_BUFFER, 12*sizeof(GLfloat), (void* )&(normaldata_base[0][0]), GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	glBindVertexArray(0);
 	
+
+	std::cout << "Buffers bound\n";
 
     initShaders();
 
@@ -398,10 +571,10 @@ int main(void)
 
     glEnable(GL_DEPTH_TEST);
 
-	float angle =0;
+	float angle = 0;
 	
-    vec3 cameraPos;
-    mat4 mvp,view,projection,model, mv;
+    vec3 cameraPos = vec3(-2.0f, 1.5f, 2.0f);
+    mat4 mvp, view, projection, model, mv;
 	mat3 normalMtx;
 
 	mvp_location_phong = glGetUniformLocation(phongProgram,"MVP");
@@ -413,62 +586,7 @@ int main(void)
 	lineWidth_location = glGetUniformLocation(phongProgram, "Line.width");
 	lineColor_location = glGetUniformLocation(phongProgram, "Line.color");
 	tesslevel_location = glGetUniformLocation(phongProgram, "tessLevel");
-
-	vec3 lightPos = vec3(3.0,3.0,3.0);
-	vec3 lightColor = vec3(1.0,1.0,1.0);
-    float lightIntensity = 1.0;
-
-	vec3 ambient = vec3(0.05, 0.0, 0.075);
-    vec3 objectColor = vec3(0.67, 0.0, 1.0);
-    float materialSI = 0.5;
-
-	GLint lightBlockIndex = glGetUniformBlockIndex(phongProgram, "LightProperties");
-	GLint materialBlockIndex = glGetUniformBlockIndex(phongProgram, "MaterialProperties");
-
-	GLint lightBlockSize;
-	glGetActiveUniformBlockiv(phongProgram, lightBlockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &lightBlockSize);
-
-	GLubyte *lightBlockBuffer = (GLubyte*)malloc(lightBlockSize);
-	GLchar *lightNames[3] = {"lightPos", "lightColor", "lightIntensity"};
-	GLuint lightIndices[3];
-	glGetUniformIndices(phongProgram, 3, lightNames, lightIndices);
-
-	GLint lightOffsets[3];
-	glGetActiveUniformsiv(phongProgram, 3, lightIndices, GL_UNIFORM_OFFSET, lightOffsets);
-
-	memcpy(lightBlockBuffer + lightOffsets[0], &lightPos[0], 3*sizeof(float));
-	memcpy(lightBlockBuffer + lightOffsets[1], &lightColor[0], 3*sizeof(float));
-	memcpy(lightBlockBuffer + lightOffsets[2], &lightIntensity, sizeof(float));
-
-	GLuint ubod_light;
-	glGenBuffers(1, &ubod_light);
-	glBindBuffer(GL_UNIFORM_BUFFER, ubod_light);
-	glBufferData(GL_UNIFORM_BUFFER, lightBlockSize, lightBlockBuffer, GL_DYNAMIC_DRAW);
-	glUniformBlockBinding(phongProgram, lightBlockIndex, 0);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubod_light);
-
-	GLint materialBlockSize;
-	glGetActiveUniformBlockiv(phongProgram, materialBlockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &materialBlockSize);
-
-	GLubyte *materialBlockBuffer = (GLubyte*)malloc(materialBlockSize);
-	GLchar *materialNames[3] = {"ambient", "objectColor", "materialSI"};
-	GLuint materialIndices[3];
-	glGetUniformIndices(phongProgram, 3, materialNames, materialIndices);
-
-	GLint materialOffsets[3];
-	glGetActiveUniformsiv(phongProgram, 3, materialIndices, GL_UNIFORM_OFFSET, materialOffsets);
-
-	memcpy(materialBlockBuffer + materialOffsets[0], &ambient[0], 3*sizeof(float));
-	memcpy(materialBlockBuffer + materialOffsets[1], &objectColor[0], 3*sizeof(float));
-	memcpy(materialBlockBuffer + materialOffsets[2], &materialSI, sizeof(float));
-
-	GLuint ubod_material;
-	glGenBuffers(1, &ubod_material);
-	glBindBuffer(GL_UNIFORM_BUFFER, ubod_material);
-	glBufferData(GL_UNIFORM_BUFFER, materialBlockSize, materialBlockBuffer, GL_DYNAMIC_DRAW);
-	glUniformBlockBinding(phongProgram, materialBlockIndex, 0);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubod_material);
-
+	
 	glClearColor(0.1,0.1,0.1,0);
 
 	float tPrev, rotSpeed, t, deltaT;
@@ -487,15 +605,16 @@ int main(void)
     glUniform4f(glGetUniformLocation(teapotProgram,"LightPosition"), 0.0f,0.0f,0.0f,1.0f);
     glUniform3f(glGetUniformLocation(teapotProgram,"LightIntensity"), 1.0f,1.0f,1.0f);
     glUniform3f(glGetUniformLocation(teapotProgram,"Kd"), 0.9f,0.9f,1.0f);
-	
-	
+
+	glPatchParameteri(GL_PATCH_VERTICES, 16);
+
     while (!glfwWindowShouldClose(window))
     {
 		model = mat4(1.0f);
 		
 		glUseProgram(phongProgram);
 
-		cameraPos = vec3(-2.0f, 1.5f, 2.0f);
+		
 		glUniform3fv(cameraPos_location_phong, 1, &(cameraPos)[0]);
 		view = glm::lookAt(cameraPos, vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f));
 
@@ -524,14 +643,14 @@ int main(void)
     	angle += 0.005f;
 		if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
 
-	    // cameraPos = vec3(2.0f * cos(angle), 1.5f, 2.0f * sin(angle));
+	    cameraPos = vec3(2.0f * cos(angle), 1.5f, 2.0f * sin(angle));
 		
 
     	projection = glm::perspective(glm::radians(45.0f), (float)width/height, 0.3f, 100.0f);
 		model = glm::rotate(model, angle, vec3(0.0f, 1.0f, 0.0f));
 		mv = view * model;
     	mvp = projection * view * model;
-		normalMtx = mat3(glm::transpose(glm::inverse(model)));
+		normalMtx = glm::mat3(glm::transpose(glm::inverse(mv)));
 
 		glUniformMatrix4fv(mvp_location_phong, 1, GL_FALSE, &(mvp)[0][0]);
 		glUniformMatrix4fv(mv_location_phong, 1, GL_FALSE, &(mv)[0][0]);
@@ -557,12 +676,10 @@ int main(void)
 
 		switch(modelToRender){
 			case 1: 
-				glUseProgram(phongProgram);
 				glBindVertexArray(icoVAO);
 				glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
 				break;
 			case 2:
-				glUseProgram(phongProgram);
 				glBindVertexArray(cubeVAO);
 				glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
 			case 3:

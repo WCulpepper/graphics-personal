@@ -3,18 +3,13 @@
 uniform float time;
 uniform vec3 cameraPos;
 
-uniform LightProperties {
-    vec3 lightPos;
-    vec3 lightColor;
-    float lightIntensity;
-};
+vec3 lightPos = vec3(3.0,3.0,3.0);
+vec3 lightColor = vec3(1.0,1.0,1.0);
+float lightIntensity = 1.0;
 
-uniform MaterialProperties {
-    vec3 ambient;
-    vec3 objectColor;
-    float materialSI;
-};
-
+vec3 ambient = vec3(0.05, 0.0, 0.075);
+vec3 objectColor = vec3(0.67, 0.0, 1.0);
+float materialSI = 0.5;
 
 layout (location=0) out vec4 FragColor;
 
@@ -23,8 +18,8 @@ uniform struct LineInfo {
     vec4 color;
 } Line;
 
-in vec3 gPosition;
-in vec3 gNormal;
+layout (location = 0) in vec3 gNormal;
+layout (location = 1) in vec3 gPosition;
 noperspective in vec3 gEdgeDistance;
 
 
@@ -58,18 +53,6 @@ vec3 specularBlinnPhong() {
     return specular;
 }
 
-// subroutine(processColor)
-// vec3 timeFlow(vec3 inputColor) {
-//     return inputColor * vec3(   (sin(time)+1.0)/2.0,
-//                                 (cos(time)+1.0)/2.0,
-//                                 (cos(time)+1.0)/4.0 + (sin(time)+1.0)/4.0 );
-// }
-
-// subroutine(processColor)
-// vec3 grayScale(vec3 inputColor) {
-//     return vec3((inputColor.r + inputColor.g + inputColor.b)/3.0);
-// }
-
 void main() {
     float d = min(gEdgeDistance.x, gEdgeDistance.y);
     d = min(d, gEdgeDistance.z);
@@ -78,7 +61,7 @@ void main() {
 
     vec3 color = (diffusePhong(lightPos, gNormal) + specularProcessor() + ambient) * objectColor;
     FragColor = mix(Line.color, vec4(color, 1.0), mixVal);
-    // FragColor = vec4(gPosition, 1.0);
+    //FragColor = vec4(gPosition, 1.0);
     // FragColor = vec4(gNormal, 1.0);
 }
 
