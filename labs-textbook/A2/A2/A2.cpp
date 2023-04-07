@@ -8,22 +8,26 @@
 #include <math.h>
 #include <iostream>
 
-#include "teapotdata.h"
-#include "texture.h"
 #include "teapotpatch.h"
 
 // the X and Z values are for drawing an icosahedron
 #define IX 0.525731112119133606 
 #define IZ 0.850650808352039932
 
+GLFWwindow* window;
 
 GLuint phongProgram;
 GLuint teapotProgram;
 
+GLuint icoVAO;
+GLuint cubeVAO;
+GLuint teapotVAO;
+GLuint groundVAO;
+
 bool usePhongSpec = true;
 
-int lastTime;
-int nFrames;
+int lastTime = 0;
+int nFrames = 0;
 int tessLevel = 8;
 int modelToRender = 1;
 
@@ -48,6 +52,77 @@ glm::vec2 mousePosition = vec2(-1.0,-1.0);
 // 	return 0.0f;
 // }
 
+int storeTex( GLubyte * data, int w, int h ) {
+	GLuint texID;
+	glGenTextures(1, &texID);
+
+	glBindTexture(GL_TEXTURE_2D, texID);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
+	glTexSubImage2D(GL_TEXTURE_2D,0,0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	return texID;
+}
+
+int generate2DTex(float baseFreq = 4.0f, float persistence = 0.5f, int w = 128, int h = 128, bool periodic = false) {
+
+	int width = w;
+	int height = h;
+
+	printf("Generating noise texture...");
+
+	GLubyte *data = new GLubyte[ width * height * 4 ];
+
+	float xFactor = 1.0f / (width - 1);
+	float yFactor = 1.0f / (height - 1);
+
+	for( int row = 0; row < height; row++ ) {
+		for( int col = 0 ; col < width; col++ ) {
+			float x = xFactor * col;
+			float y = yFactor * row;
+			float sum = 0.0f;
+			float freq = baseFreq;
+			float persist = persistence;
+			for( int oct = 0; oct < 4; oct++ ) {
+				glm::vec2 p(x * freq, y * freq);
+
+				float val = 0.0f;
+				if (periodic) {
+					val = glm::perlin(p, glm::vec2(freq)) * persist;
+				} else {
+					val = glm::perlin(p) * persist;
+				}
+
+				sum += val;
+
+				float result = (sum + 1.0f) / 2.0f;
+
+				// Clamp strictly between 0 and 1
+				result = result > 1.0f ? 1.0f : result;
+				result = result < 0.0f ? 0.0f : result;
+
+				// Store in texture
+				data[((row * width + col) * 4) + oct] = (GLubyte) ( result * 255.0f );
+				freq *= 2.0f;
+				persist *= persistence;
+			}
+		}
+	}
+
+	int texID = storeTex(data, width, height);
+	delete [] data;
+
+	printf("done.\n");
+	return texID;
+}
+
+int generatePeriodic2DTex(float baseFreq = 4.0f, float persist = 0.5f, int w = 128, int h = 128) {
+	return generate2DTex(baseFreq, persist, w, h, true);
+}
+
 void readShader(const char* fname, char *source)
 {
 	FILE *fp;
@@ -66,6 +141,45 @@ void readShader(const char* fname, char *source)
 	}
 }
 
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+		modelToRender = 1;
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+		modelToRender = 2;
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+		modelToRender = 3;
+	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+		usePhongSpec = true;
+	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+		usePhongSpec = false;
+}
+
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+	if(button == GLFW_MOUSE_BUTTON_LEFT) {
+		leftMouseButtonState = action;
+	} 
+}
+
+static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
+	
+	if(mousePosition.x < 0 && mousePosition.y < 0) {
+		mousePosition = vec2(x, y);
+	}
+
+	if(leftMouseButtonState == GLFW_PRESS) {
+
+	}
+}
+
+static void error_callback(int error, const char* description)
+{
+    fprintf(stderr, "Error: %s\n", description);
+}
+
+
 unsigned int loadShader(const char *source, unsigned int mode)
 {
 	GLuint id;
@@ -81,6 +195,45 @@ unsigned int loadShader(const char *source, unsigned int mode)
 	printf("Compile status: \n %s\n",error);
 
 	return id;
+}
+
+void initWindow() {
+	glfwSetErrorCallback(error_callback);
+    if (!glfwInit())
+        exit(EXIT_FAILURE);
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+
+    window = glfwCreateWindow(1200, 600, "A2", NULL, NULL);
+    if (!window)
+    {
+		std::cout << "Error setting up winodow\n";
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
+    glfwSetKeyCallback(window, key_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetCursorPosCallback(window, cursor_pos_callback);
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+
+	gladLoadGL();
+
+	const GLubyte *renderer = glGetString( GL_RENDERER );
+	const GLubyte *vendor = glGetString( GL_VENDOR );
+	const GLubyte *version = glGetString( GL_VERSION );
+	const GLubyte *glslVersion = glGetString( GL_SHADING_LANGUAGE_VERSION );
+
+	GLint major, minor;
+	glGetIntegerv(GL_MAJOR_VERSION, &major);
+	glGetIntegerv(GL_MINOR_VERSION, &minor);
+
+	printf("GL Vendor            : %s\n", vendor);
+	printf("GL Renderer          : %s\n", renderer);
+	printf("GL Version (string)  : %s\n", version);
+	printf("GL Version (integer) : %d.%d\n", major, minor);
+	printf("GLSL Version         : %s\n", glslVersion);
 }
 
 void initShaders()
@@ -113,6 +266,7 @@ void initShaders()
 	tesSource_teapot[0]='\0';
 
 	phongProgram = glCreateProgram();
+	teapotProgram = glCreateProgram();
 
 	readShader("shader/wireframe_vertex.vs",vsSource_wireframe);
 	readShader("shader/wireframe_fragment.fs",fsSource_wireframe);
@@ -151,131 +305,21 @@ void initShaders()
 	
 }
 
-static void error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Error: %s\n", description);
-}
+void initBuffers() {
 
-
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
-		modelToRender = 1;
-	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
-		modelToRender = 2;
-	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
-		modelToRender = 3;
-	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
-		usePhongSpec = true;
-	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
-		usePhongSpec = false;
-}
-
-static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-	if(button == GLFW_MOUSE_BUTTON_LEFT) {
-		leftMouseButtonState = action;
-	} 
-}
- 
-
-static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
-	
-	if(mousePosition.x < 0 && mousePosition.y < 0) {
-		mousePosition = vec2(x, y);
-	}
-
-	if(leftMouseButtonState == GLFW_PRESS) {
-
-	}
-}
-
-void showFPS(GLFWwindow* window) {
-        double currentTime = glfwGetTime();
-        double delta = currentTime - lastTime;
-	    char ss[500] = {};
-		std::string wTitle = "Icosahedron";
-        nFrames++;
-        if ( delta >= 1.0 ){ // If last update was more than 1 sec ago
-            double fps = ((double)(nFrames)) / delta;
-            sprintf(ss,"%s running at %lf FPS.",wTitle.c_str(),fps);
-            glfwSetWindowTitle(window, ss);
-            nFrames = 0;
-            lastTime = currentTime;
-        }
-}
-    
-int main(void)
-{	
-    GLFWwindow* window;
-
-    GLuint ico_vertpos_buffer;
+	GLuint ico_vertpos_buffer;
 	GLuint ico_normal_buffer;
     GLuint ico_index_buffer;
-    GLuint icoVAO;
 
 	GLuint cube_vertpos_buffer;
 	GLuint cube_normal_buffer;
 	GLuint cube_index_buffer;
-	GLuint cubeVAO;
 
 	GLuint teapot_patches_buffer;
 	GLuint teapot_controlPoints_buffer;
-	GLuint teapotVAO;
 
 	GLuint vertpos_base_buffer;
 	GLuint normal_base_buffer;
-	GLuint groundVAO;
-
-    int i,j,c;
-
-	GLint mvp_location_phong, model_location_phong, mv_location_phong;
-	GLint normal_location_phong;
-	GLint viewport_location;
-	GLint cameraPos_location_phong;
-	GLint lineWidth_location, lineColor_location;
-
-	lastTime = 0;
-	nFrames = 0;
-
-    glfwSetErrorCallback(error_callback);
-    if (!glfwInit())
-        exit(EXIT_FAILURE);
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-
-    window = glfwCreateWindow(1200, 600, "Icosahedron", NULL, NULL);
-    if (!window)
-    {
-		std::cout << "Error setting up winodow\n";
-        glfwTerminate();
-        exit(EXIT_FAILURE);
-    }
-    glfwSetKeyCallback(window, key_callback);
-	glfwSetMouseButtonCallback(window, mouse_button_callback);
-	glfwSetCursorPosCallback(window, cursor_pos_callback);
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-
-	gladLoadGL();
-
-	const GLubyte *renderer = glGetString( GL_RENDERER );
-	const GLubyte *vendor = glGetString( GL_VENDOR );
-	const GLubyte *version = glGetString( GL_VERSION );
-	const GLubyte *glslVersion = glGetString( GL_SHADING_LANGUAGE_VERSION );
-
-	GLint major, minor;
-	glGetIntegerv(GL_MAJOR_VERSION, &major);
-	glGetIntegerv(GL_MINOR_VERSION, &minor);
-
-	printf("GL Vendor            : %s\n", vendor);
-	printf("GL Renderer          : %s\n", renderer);
-	printf("GL Version (string)  : %s\n", version);
-	printf("GL Version (integer) : %d.%d\n", major, minor);
-	printf("GLSL Version         : %s\n", glslVersion);
-	
 	// These are the 12 vertices for the icosahedron
 	static GLfloat vdata_ico[12][3] = {    
 		{-IX, 0.0, IZ}, {IX, 0.0, IZ}, {-IX, 0.0, -IZ}, {IX, 0.0, -IZ},    
@@ -558,66 +602,39 @@ int main(void)
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
-	glBindVertexArray(0);
-	int width, height = 100;
-	int a = 1; 
-	int b = 1;
-	GLubyte *data = new GLubyte[ width * height * 4 ];
-	float xFactor = 1.0f / (width - 1);
-	float yFactor = 1.0f / (height - 1);
-	for( int row = 0; row < height; row++ ) {
-		for( int col = 0 ; col < width; col++ ) {
-			float x = xFactor * col;
-			float y = yFactor * row;
-			float sum = 0.0f;
-			float freq = a;
-			float scale = b;
-			// Compute the sum for each octave
-			for( int oct = 0; oct < 4; oct++ ) {
-				glm::vec2 p(x * freq, y * freq);
-				float val = glm::perlin(p) / scale;
-				sum += val;
-				float result = (sum + 1.0f)/ 2.0f;
-				// Store in texture buffer
-				data[((row * width + col) * 4) + oct] =
-				(GLubyte) ( result * 255.0f );
-				freq *= 2.0f; // Double the frequency
-				scale *= b; // Next power of b
-			}
-		}
-	}
-
-	width = height = 0;
-
-	
-	GLfloat tex_coords[] = {
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		0.5f, 1.0f
-	};
-
-	GLuint texCoord_buffer;
-	glGenBuffers(1, &texCoord_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, texCoord_buffer);
-	glBufferData(GL_ARRAY_BUFFER, 6*sizeof(GLfloat), (void *)&(tex_coords), GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, texCoord_buffer);
-	glEnableVertexAttribArray(2);
-    glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
-
-	GLuint texID;
-	glGenTextures(1, &texID);
-	glBindTexture(GL_TEXTURE_2D, texID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	GLuint noiseTex = generatePeriodic2DTex();
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texID);
+	glBindTexture(GL_TEXTURE_2D, noiseTex);
 
-	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), texID);
-	
+	glBindVertexArray(0);
+}
 
+void showFPS(GLFWwindow* window) {
+        double currentTime = glfwGetTime();
+        double delta = currentTime - lastTime;
+	    char ss[500] = {};
+		std::string wTitle = "A2";
+        nFrames++;
+        if ( delta >= 1.0 ){ // If last update was more than 1 sec ago
+            double fps = ((double)(nFrames)) / delta;
+            sprintf(ss,"%s running at %lf FPS.",wTitle.c_str(),fps);
+            glfwSetWindowTitle(window, ss);
+            nFrames = 0;
+            lastTime = currentTime;
+        }
+}
+    
+int main(void)
+{	
+	GLint mvp_location_phong, model_location_phong, mv_location_phong;
+	GLint normal_location_phong;
+	GLint viewport_location;
+	GLint cameraPos_location_phong;
+	GLint lineWidth_location, lineColor_location;
+
+	initWindow();
+	initBuffers();
     initShaders();
 
 	TeapotPatch teapot;
@@ -653,7 +670,7 @@ int main(void)
 
 	glUniform1i(glGetUniformLocation(teapotProgram,"TessLevel"), tessLevel);
     glUniform1f(glGetUniformLocation(teapotProgram,"LineWidth"), 0.8f);
-    glUniform4f(glGetUniformLocation(teapotProgram,"LineColor"), 0.05f,0.0f,0.05f,1.0f);
+    glUniform4f(glGetUniformLocation(teapotProgram,"LineColor"), 1.0f,1.0f,1.0f,1.0f);
     glUniform4f(glGetUniformLocation(teapotProgram,"LightPosition"), 0.0f,0.0f,0.0f,1.0f);
     glUniform3f(glGetUniformLocation(teapotProgram,"LightIntensity"), 1.0f,1.0f,1.0f);
     glUniform3f(glGetUniformLocation(teapotProgram,"Kd"), 0.9f,0.9f,1.0f);
@@ -673,6 +690,7 @@ int main(void)
 		glUniform1f(lineWidth_location, 0.8f);
 		
         float ratio;
+		int width, height;
         glfwGetFramebufferSize(window, &width, &height);
         glViewport(0, 0, width, height);
 
@@ -694,8 +712,6 @@ int main(void)
 		if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
 
 	    cameraPos = vec3(2.0f * cos(angle), 1.5f, 2.0f * sin(angle));
-		
-
     	projection = glm::perspective(glm::radians(45.0f), (float)width/height, 0.3f, 100.0f);
 		model = glm::rotate(model, angle, vec3(0.0f, 1.0f, 0.0f));
 		mv = view * model;
@@ -710,12 +726,7 @@ int main(void)
 
 		glm::mat3 nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
 
-		glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"ModelViewMatrix"), 1, GL_FALSE, &(mv)[0][0]);
-    	glUniformMatrix3fv(glGetUniformLocation(teapotProgram,"NormalMatrix"), 1, GL_FALSE, &(nm)[0][0]);
-    	glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"MVP"), 1, GL_FALSE, &(mvp)[0][0]);
-    	glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"ViewportMatrix"), 1, GL_FALSE, &(viewport)[0][0]);
-
-        glUniform1i(glGetUniformLocation(teapotProgram,"TessLevel"), tessLevel);
+		
 
 		if(usePhongSpec) {
 			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &phongSpecPhong);
@@ -726,9 +737,6 @@ int main(void)
 		glBindVertexArray(groundVAO);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-
-		
-
 		switch(modelToRender){
 			case 1: 
 				glBindVertexArray(icoVAO);
@@ -737,8 +745,20 @@ int main(void)
 			case 2:
 				glBindVertexArray(cubeVAO);
 				glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
+				break;
 			case 3:
 				glUseProgram(teapotProgram);
+				model = glm::scale(model, vec3(0.25, 0.25, 0.25));
+				model = glm::rotate(model, glm::radians(-90.0f), vec3(1,0,0));
+				mv = view * model;
+				nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+				mvp = projection * view * model;
+				glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"ModelViewMatrix"), 1, GL_FALSE, &(mv)[0][0]);
+				glUniformMatrix3fv(glGetUniformLocation(teapotProgram,"NormalMatrix"), 1, GL_FALSE, &(nm)[0][0]);
+				glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"MVP"), 1, GL_FALSE, &(mvp)[0][0]);
+				glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"ViewportMatrix"), 1, GL_FALSE, &(viewport)[0][0]);
+
+				glUniform1i(glGetUniformLocation(teapotProgram,"TessLevel"), tessLevel);
 				teapot.render();
 				break;
 			default: break;

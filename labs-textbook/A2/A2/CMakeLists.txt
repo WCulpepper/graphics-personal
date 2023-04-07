@@ -12,6 +12,8 @@ target_compile_definitions(${target}
 		GLFW_INCLUDE_NONE
 		)
 
+target_include_directories( ${target} PRIVATE ingredients)
+
 target_link_libraries( ${target}
         PRIVATE
         glad
