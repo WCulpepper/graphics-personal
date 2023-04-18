@@ -9,10 +9,12 @@
 #include <iostream>
 #include <OGLEngine.hpp>
 #include "teapotpatch.h"
+#include "teapotdata.h"
 
 // the X and Z values are for drawing an icosahedron
 #define IX 0.525731112119133606 
 #define IZ 0.850650808352039932
+#define M_PI = 3.14159265
 
 GLFWwindow* window;
 
@@ -51,6 +53,64 @@ glm::vec2 mousePosition = vec2(-1.0,-1.0);
 
 // 	return 0.0f;
 // }
+
+OGLEngine::OGLEngine(int OPENGL_MAJOR, int OPENGL_MINOR, int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_NAME) {
+	for(auto& _key : _keys) _key = GL_FALSE;
+
+	_mousePos = glm::vec2(MOUSE_UNINIT, MOUSE_UNINIT);
+	_leftMouseButtonState = GLFW_RELEASE;
+	_selectedCam = 1;
+}
+
+OGLEngine::~OGLEngine() {
+	
+}
+
+void OGLEngine::_setupGLFW() {
+	glfwSetErrorCallback(error_callback);
+	// initialize GLFW
+    if( !glfwInit() ) {
+        fprintf( stderr, "[ERROR]: Could not initialize GLFW\n" );
+        _errorCode = OPENGL_ENGINE_ERROR_GLFW_INIT;
+    } else {
+	if(DEBUG) fprintf( stdout, "[INFO]: GLFW %d.%d.%d initialized\n", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION );
+
+	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, _majorVersion );	        // request OpenGL vX.
+	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, _minorVersion );	        // request OpenGL v.X
+	glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );                  // request forward compatible OpenGL context
+	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );        // request OpenGL Core Profile context
+	glfwWindowHint( GLFW_DOUBLEBUFFER, GLFW_TRUE );                             // request double buffering
+	glfwWindowHint( GLFW_RESIZABLE, _windowResizable );		                // set if our window should be able to be resized
+	
+	// create a window for a given size, with a given title
+	_window = glfwCreateWindow( _windowWidth, _windowHeight, _windowTitle, nullptr, nullptr );
+	if( !_window ) {						                                // if the window could not be created, NULL is returned
+		fprintf( stderr, "[ERROR]: GLFW Window could not be created\n" );
+		glfwTerminate();
+		_errorCode = OPENGL_ENGINE_ERROR_GLFW_WINDOW;
+	} else {
+		if(DEBUG) fprintf( stdout, "[INFO]: GLFW Window created\n" );
+		glfwMakeContextCurrent(_window);		                                // make the created window the current window
+		glfwSwapInterval(1);				                            // update our screen after at least 1 screen refresh
+
+		glfwSetWindowUserPointer(_window, (void*)this);
+		glfwSetWindowSizeCallback(_window, _windowResizeCallback);
+	}
+
+	glfwSetKeyCallback(_window, key_callback);
+	glfwSetMouseButtonCallback(_window, mouse_button_callback);
+	glfwSetCursorPosCallback(_window, cursor_pos_callback);
+	glfwSetScrollCallback(_window, scroll_callback);
+	}
+}
+
+void OGLEngine::_setupOGL() {
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+}
 
 int storeTex( GLubyte * data, int w, int h ) {
 	GLuint texID;
@@ -174,6 +234,12 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 	}
 }
 
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+	if(abs(yoffset) > 0) {
+		// something goes here
+	}
+}
+
 static void error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
@@ -236,7 +302,15 @@ void initWindow() {
 	printf("GLSL Version         : %s\n", glslVersion);
 }
 
-void initShaders()
+void OGLEngine::_setupGLFW() {
+
+}
+
+void OGLEngine::_setupOGL() {
+
+}
+
+void OGLEngine::_setupShaders()
 {
 	char *vsSource_wireframe, *fsSource_wireframe, *gsSource_wireframe, 
 	*vsSource_teapot, *fsSource_teapot, *gsSource_teapot, *tcsSource_teapot, *tesSource_teapot;
@@ -305,7 +379,7 @@ void initShaders()
 	
 }
 
-void initBuffers() {
+void OGLEngine::_setupBuffers() {
 
 	GLuint ico_vertpos_buffer;
 	GLuint ico_normal_buffer;
@@ -314,9 +388,6 @@ void initBuffers() {
 	GLuint cube_vertpos_buffer;
 	GLuint cube_normal_buffer;
 	GLuint cube_index_buffer;
-
-	GLuint teapot_patches_buffer;
-	GLuint teapot_controlPoints_buffer;
 
 	GLuint vertpos_base_buffer;
 	GLuint normal_base_buffer;
@@ -354,158 +425,7 @@ void initBuffers() {
             4, 5, 6, 4, 6, 7, 
             0, 4, 3, 4, 7, 3 };
 
-	int teapot_patches[][16] =
-	{
-		/* rim */
-		{102, 103, 104, 105, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-		/* body */
-		{12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27},
-		{24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40},
-		/* lid */
-		{96, 96, 96, 96, 97, 98, 99, 100, 101, 101, 101, 101, 0, 1, 2, 3,},
-		{0, 1, 2, 3, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117},
-		/* bottom */
-		{118, 118, 118, 118, 124, 122, 119, 121, 123, 126, 125, 120, 40, 39, 38, 37},
-		/* handle */
-		{41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56},
-		{53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 28, 65, 66, 67},
-		/* spout */
-		{68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83},
-		{80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95}
-	};
-
-
-	float teapot_controlPoints[][3] =
-	{
-		{0.2f, 0.f, 2.7f},
-		{0.2f, -0.112f, 2.7f},
-		{0.112f, -0.2f, 2.7f},
-		{0.f, -0.2f, 2.7f},
-		{1.3375f, 0.f, 2.53125f},
-		{1.3375f, -0.749f, 2.53125f},
-		{0.749f, -1.3375f, 2.53125f},
-		{0.f, -1.3375f, 2.53125f},
-		{1.4375f, 0.f, 2.53125f},
-		{1.4375f, -0.805f, 2.53125f},
-		{0.805f, -1.4375f, 2.53125f},
-		{0.f, -1.4375f, 2.53125f},
-		{1.5f, 0.f, 2.4f},
-		{1.5f, -0.84f, 2.4f},
-		{0.84f, -1.5f, 2.4f},
-		{0.f, -1.5f, 2.4f},
-		{1.75f, 0.f, 1.875f},
-		{1.75f, -0.98f, 1.875f},
-		{0.98f, -1.75f, 1.875f},
-		{0.f, -1.75f, 1.875f},
-		{2.f, 0.f, 1.35f},
-		{2.f, -1.12f, 1.35f},
-		{1.12f, -2.f, 1.35f},
-		{0.f, -2.f, 1.35f},
-		{2.f, 0.f, 0.9f},
-		{2.f, -1.12f, 0.9f},
-		{1.12f, -2.f, 0.9f},
-		{0.f, -2.f, 0.9f},
-		{-2.f, 0.f, 0.9f},
-		{2.f, 0.f, 0.45f},
-		{2.f, -1.12f, 0.45f},
-		{1.12f, -2.f, 0.45f},
-		{0.f, -2.f, 0.45f},
-		{1.5f, 0.f, 0.225f},
-		{1.5f, -0.84f, 0.225f},
-		{0.84f, -1.5f, 0.225f},
-		{0.f, -1.5f, 0.225f},
-		{1.5f, 0.f, 0.15f},
-		{1.5f, -0.84f, 0.15f},
-		{0.84f, -1.5f, 0.15f},
-		{0.f, -1.5f, 0.15f},
-		{-1.6f, 0.f, 2.025f},
-		{-1.6f, -0.3f, 2.025f},
-		{-1.5f, -0.3f, 2.25f},
-		{-1.5f, 0.f, 2.25f},
-		{-2.3f, 0.f, 2.025f},
-		{-2.3f, -0.3f, 2.025f},
-		{-2.5f, -0.3f, 2.25f},
-		{-2.5f, 0.f, 2.25f},
-		{-2.7f, 0.f, 2.025f},
-		{-2.7f, -0.3f, 2.025f},
-		{-3.f, -0.3f, 2.25f},
-		{-3.f, 0.f, 2.25f},
-		{-2.7f, 0.f, 1.8f},
-		{-2.7f, -0.3f, 1.8f},
-		{-3.f, -0.3f, 1.8f},
-		{-3.f, 0.f, 1.8f},
-		{-2.7f, 0.f, 1.575f},
-		{-2.7f, -0.3f, 1.575f},
-		{-3.f, -0.3f, 1.35f},
-		{-3.f, 0.f, 1.35f},
-		{-2.5f, 0.f, 1.125f},
-		{-2.5f, -0.3f, 1.125f},
-		{-2.65f, -0.3f, 0.9375f},
-		{-2.65f, 0.f, 0.9375f},
-		{-2.f, -0.3f, 0.9f},
-		{-1.9f, -0.3f, 0.6f},
-		{-1.9f, 0.f, 0.6f},
-		{1.7f, 0.f, 1.425f},
-		{1.7f, -0.66f, 1.425f},
-		{1.7f, -0.66f, 0.6f},
-		{1.7f, 0.f, 0.6f},
-		{2.6f, 0.f, 1.425f},
-		{2.6f, -0.66f, 1.425f},
-		{3.1f, -0.66f, 0.825f},
-		{3.1f, 0.f, 0.825f},
-		{2.3f, 0.f, 2.1f},
-		{2.3f, -0.25f, 2.1f},
-		{2.4f, -0.25f, 2.025f},
-		{2.4f, 0.f, 2.025f},
-		{2.7f, 0.f, 2.4f},
-		{2.7f, -0.25f, 2.4f},
-		{3.3f, -0.25f, 2.4f},
-		{3.3f, 0.f, 2.4f},
-		{2.8f, 0.f, 2.475f},
-		{2.8f, -0.25f, 2.475f},
-		{3.525f, -0.25f, 2.49375f},
-		{3.525f, 0.f, 2.49375f},
-		{2.9f, 0.f, 2.475f},
-		{2.9f, -0.15f, 2.475f},
-		{3.45f, -0.15f, 2.5125f},
-		{3.45f, 0.f, 2.5125f},
-		{2.8f, 0.f, 2.4f},
-		{2.8f, -0.15f, 2.4f},
-		{3.2f, -0.15f, 2.4f},
-		{3.2f, 0.f, 2.4f},
-		{0.f, 0.f, 3.15f},
-		{0.8f, 0.f, 3.15f},
-		{0.8f, -0.45f, 3.15f},
-		{0.45f, -0.8f, 3.15f},
-		{0.f, -0.8f, 3.15f},
-		{0.f, 0.f, 2.85f},
-		{1.4f, 0.f, 2.4f},
-		{1.4f, -0.784f, 2.4f},
-		{0.784f, -1.4f, 2.4f},
-		{0.f, -1.4f, 2.4f},
-		{0.4f, 0.f, 2.55f},
-		{0.4f, -0.224f, 2.55f},
-		{0.224f, -0.4f, 2.55f},
-		{0.f, -0.4f, 2.55f},
-		{1.3f, 0.f, 2.55f},
-		{1.3f, -0.728f, 2.55f},
-		{0.728f, -1.3f, 2.55f},
-		{0.f, -1.3f, 2.55f},
-		{1.3f, 0.f, 2.4f},
-		{1.3f, -0.728f, 2.4f},
-		{0.728f, -1.3f, 2.4f},
-		{0.f, -1.3f, 2.4f},
-		{0.f, 0.f, 0.f},
-		{1.425f, -0.798f, 0.f},
-		{1.5f, 0.f, 0.075f},
-		{1.425f, 0.f, 0.f},
-		{0.798f, -1.425f, 0.f},
-		{0.f, -1.5f, 0.075f},
-		{0.f, -1.425f, 0.f},
-		{1.5f, -0.84f, 0.075f},
-		{0.84f, -1.5f, 0.075f}
-	};
-
+	
 	static GLfloat vdata_base[4][3] = {
 		{-2.0,-1.0,-2.0}, {-2.0,-1.0,2.0}, {2.0,-1.0,-2.0}, {2.0,-1.0,2.0}
 	};
@@ -568,17 +488,6 @@ void initBuffers() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
-	// glGenBuffers(1, &teapot_controlPoints_buffer);
-	// glGenBuffers(1, &teapot_patches_buffer);
-
-	// glGenVertexArrays(1, &teapotVAO);
-	// glBindVertexArray(teapotVAO);
-
-	// glBindBuffer(GL_ARRAY_BUFFER, teapot_controlPoints_buffer);
-	// glBufferData(GL_ARRAY_BUFFER, (463-337)*sizeof(float), (void*)&(teapot_controlPoints), GL_STATIC_DRAW);
-
-	// glBindBuffer(GL_ARRAY_BUFFER)
-
 	glGenBuffers(1, &vertpos_base_buffer);
 	glGenBuffers(1, &normal_base_buffer);
 	
@@ -625,7 +534,7 @@ void showFPS(GLFWwindow* window) {
         }
 }
     
-int main(void)
+void OGLEngine::run()
 {	
 	GLint mvp_location_phong, model_location_phong, mv_location_phong;
 	GLint normal_location_phong;
@@ -634,8 +543,8 @@ int main(void)
 	GLint lineWidth_location, lineColor_location;
 
 	initWindow();
-	initBuffers();
-    initShaders();
+	_setupBuffers();
+    _setupShaders();
 
 	TeapotPatch teapot;
 

@@ -24,7 +24,30 @@ public:
 
     static constexpr GLfloat MOUSE_UNINIT = -9999.0f;
 
+    void setCurrentWindowSize(const int WINDOW_WIDTH, const int WINDOW_HEIGHT) { _windowWidth = WINDOW_WIDTH; _windowHeight = WINDOW_HEIGHT; }
+    /// \desc Return the height of the window
+    int getWindowHeight() const noexcept { return _windowHeight; }
+    /// \desc Return the width of the window
+    int getWindowWidth() const noexcept { return _windowWidth; }
+    /// \desc Return the window object
+    GLFWwindow* getWindow() const noexcept { return _window; }
+
+    /// \desc Tell our engine's window to close
+    void setWindowShouldClose() { glfwSetWindowShouldClose(_window, GLFW_TRUE); }
+
+    unsigned int getError() noexcept {
+        unsigned int storedErrorCode = _errorCode;  // store current error code
+        _errorCode = OPENGL_ENGINE_ERROR_NO_ERROR;  // reset error code
+        return storedErrorCode;                     // return previously stored error code
+    }
+
+    static const unsigned int OPENGL_ENGINE_ERROR_NO_ERROR      = 0;
+    static const unsigned int OPENGL_ENGINE_ERROR_GLFW_INIT     = 1;
+    static const unsigned int OPENGL_ENGINE_ERROR_GLFW_WINDOW   = 2;
+    static const unsigned int OPENGL_ENGINE_ERROR_GLEW_INIT     = 3;
+
 private:
+    
     void _setupGLFW();
     void _setupOGL();
     void _setupShaders();
@@ -68,7 +91,17 @@ private:
     GLuint _ibos[NUM_VAOS];
     // number of points that make up our VAO
     GLsizei _numVAOPoints[NUM_VAOS];
+protected:
+    unsigned int _errorCode;
+    int _majorVersion;
+    int _minorVersion;
+    int _windowWidth;
+    int _windowHeight;
+    int _windowResizable;
+    char* _windowTitle;
+    GLFWwindow* _window;
 
+    static void _windowResizeCallback(GLFWwindow* window, int width, int height);
 };
 
 #endif // OGL_ENGINE_HPP
