@@ -1,5 +1,13 @@
 #include <OGLEngine.hpp>
 
 int main() {
-    OGLEngine* engine;
+    auto engine = new OGLEngine(4, 6, 1280, 1440, "OpenGL Engine");
+    engine-> initialize();
+
+    if(engine->getError() == OGLEngine::OPENGL_ENGINE_ERROR_NO_ERROR) {
+        engine->run();
+    }
+    engine->shutdown();
+    delete engine;
+    return EXIT_SUCCESS;
 }

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <math.h>
 #include <iostream>
@@ -14,11 +15,12 @@
 // the X and Z values are for drawing an icosahedron
 #define IX 0.525731112119133606 
 #define IZ 0.850650808352039932
-#define M_PI = 3.14159265
 
-GLFWwindow* window;
+#ifndef M_PI
+#define M_PI 3.14159265
+#endif
 
-GLuint phongProgram;
+GLuint wireframeProgram;
 GLuint teapotProgram;
 
 GLuint icoVAO;
@@ -56,155 +58,25 @@ glm::vec2 mousePosition = vec2(-1.0,-1.0);
 
 OGLEngine::OGLEngine(int OPENGL_MAJOR, int OPENGL_MINOR, int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_NAME) {
 	for(auto& _key : _keys) _key = GL_FALSE;
-
+	_windowTitle = (char*)malloc(sizeof(char)*strlen(WINDOW_NAME));
+	strcpy(_windowTitle, WINDOW_NAME);
 	_mousePos = glm::vec2(MOUSE_UNINIT, MOUSE_UNINIT);
 	_leftMouseButtonState = GLFW_RELEASE;
 	_selectedCam = 1;
+
+	_errorCode = OPENGL_ENGINE_ERROR_NO_ERROR;
+	_isInitialized = false;
+	_isCleanedUp = false;
 }
 
 OGLEngine::~OGLEngine() {
-	
+	shutdown();
+	free(_windowTitle);
 }
 
-void OGLEngine::_setupGLFW() {
-	glfwSetErrorCallback(error_callback);
-	// initialize GLFW
-    if( !glfwInit() ) {
-        fprintf( stderr, "[ERROR]: Could not initialize GLFW\n" );
-        _errorCode = OPENGL_ENGINE_ERROR_GLFW_INIT;
-    } else {
-	if(DEBUG) fprintf( stdout, "[INFO]: GLFW %d.%d.%d initialized\n", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION );
-
-	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, _majorVersion );	        // request OpenGL vX.
-	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, _minorVersion );	        // request OpenGL v.X
-	glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );                  // request forward compatible OpenGL context
-	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );        // request OpenGL Core Profile context
-	glfwWindowHint( GLFW_DOUBLEBUFFER, GLFW_TRUE );                             // request double buffering
-	glfwWindowHint( GLFW_RESIZABLE, _windowResizable );		                // set if our window should be able to be resized
-	
-	// create a window for a given size, with a given title
-	_window = glfwCreateWindow( _windowWidth, _windowHeight, _windowTitle, nullptr, nullptr );
-	if( !_window ) {						                                // if the window could not be created, NULL is returned
-		fprintf( stderr, "[ERROR]: GLFW Window could not be created\n" );
-		glfwTerminate();
-		_errorCode = OPENGL_ENGINE_ERROR_GLFW_WINDOW;
-	} else {
-		if(DEBUG) fprintf( stdout, "[INFO]: GLFW Window created\n" );
-		glfwMakeContextCurrent(_window);		                                // make the created window the current window
-		glfwSwapInterval(1);				                            // update our screen after at least 1 screen refresh
-
-		glfwSetWindowUserPointer(_window, (void*)this);
-		glfwSetWindowSizeCallback(_window, _windowResizeCallback);
-	}
-
-	glfwSetKeyCallback(_window, key_callback);
-	glfwSetMouseButtonCallback(_window, mouse_button_callback);
-	glfwSetCursorPosCallback(_window, cursor_pos_callback);
-	glfwSetScrollCallback(_window, scroll_callback);
-	}
-}
-
-void OGLEngine::_setupOGL() {
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-}
-
-int storeTex( GLubyte * data, int w, int h ) {
-	GLuint texID;
-	glGenTextures(1, &texID);
-
-	glBindTexture(GL_TEXTURE_2D, texID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
-	glTexSubImage2D(GL_TEXTURE_2D,0,0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,data);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	return texID;
-}
-
-int generate2DTex(float baseFreq = 4.0f, float persistence = 0.5f, int w = 128, int h = 128, bool periodic = false) {
-
-	int width = w;
-	int height = h;
-
-	printf("Generating noise texture...");
-
-	GLubyte *data = new GLubyte[ width * height * 4 ];
-
-	float xFactor = 1.0f / (width - 1);
-	float yFactor = 1.0f / (height - 1);
-
-	for( int row = 0; row < height; row++ ) {
-		for( int col = 0 ; col < width; col++ ) {
-			float x = xFactor * col;
-			float y = yFactor * row;
-			float sum = 0.0f;
-			float freq = baseFreq;
-			float persist = persistence;
-			for( int oct = 0; oct < 4; oct++ ) {
-				glm::vec2 p(x * freq, y * freq);
-
-				float val = 0.0f;
-				if (periodic) {
-					val = glm::perlin(p, glm::vec2(freq)) * persist;
-				} else {
-					val = glm::perlin(p) * persist;
-				}
-
-				sum += val;
-
-				float result = (sum + 1.0f) / 2.0f;
-
-				// Clamp strictly between 0 and 1
-				result = result > 1.0f ? 1.0f : result;
-				result = result < 0.0f ? 0.0f : result;
-
-				// Store in texture
-				data[((row * width + col) * 4) + oct] = (GLubyte) ( result * 255.0f );
-				freq *= 2.0f;
-				persist *= persistence;
-			}
-		}
-	}
-
-	int texID = storeTex(data, width, height);
-	delete [] data;
-
-	printf("done.\n");
-	return texID;
-}
-
-int generatePeriodic2DTex(float baseFreq = 4.0f, float persist = 0.5f, int w = 128, int h = 128) {
-	return generate2DTex(baseFreq, persist, w, h, true);
-}
-
-void readShader(const char* fname, char *source)
-{
-	FILE *fp;
-	fp = fopen(fname,"r");
-	if (fp==NULL)
-	{
-		fprintf(stderr,"The shader file %s cannot be opened!\n",fname);
-		glfwTerminate();
-		exit(1);
-	}
-	char tmp[300];
-	while (fgets(tmp,300,fp)!=NULL)
-	{
-		strcat(source,tmp);
-		strcat(source,"\n");
-	}
-}
-
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+void OGLEngine::keyEventHandler(GLint key, GLint action) {
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(_window, GLFW_TRUE);
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
 		modelToRender = 1;
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
@@ -217,53 +89,98 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		usePhongSpec = false;
 }
 
-static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+void OGLEngine::mbEventHandler(GLint button, GLint action) {
 	if(button == GLFW_MOUSE_BUTTON_LEFT) {
 		leftMouseButtonState = action;
 	} 
 }
 
-static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
-	
-	if(mousePosition.x < 0 && mousePosition.y < 0) {
-		mousePosition = vec2(x, y);
+void OGLEngine::cursorPosEventHandler(glm::vec2 currMousePosition) {
+	if(_mousePos.x == MOUSE_UNINIT) {
+		_mousePos = currMousePosition;
 	}
 
-	if(leftMouseButtonState == GLFW_PRESS) {
-
+	if(_leftMouseButtonState == GLFW_PRESS) {
+		_arcballCam->rotate((currMousePosition.x - _mousePos.x) * 0.005f,
+                            (_mousePos.y - currMousePosition.y) * 0.005f );
 	}
+
+	_mousePos = currMousePosition;
 }
 
-static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-	if(abs(yoffset) > 0) {
+void OGLEngine::scrollWheelEventHandler(double offset) {
+	if(abs(offset) > 0) {
 		// something goes here
 	}
 }
 
-static void error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Error: %s\n", description);
+void OGLEngine::windowResizeHandler(int width, int height) {
+
+}
+
+void OGLEngine::initialize() {
+	if(!_isInitialized) {
+		_setupGLFW();
+		_setupOGL();
+
+		_setupBuffers();
+		_setupTextures();
+		_setupShaders();
+		_setupScene();
+
+		_isInitialized = true;
+	}
 }
 
 
-unsigned int loadShader(const char *source, unsigned int mode)
-{
-	GLuint id;
-	id = glCreateShader(mode);
 
-	glShaderSource(id,1,&source,NULL);
+void OGLEngine::_setupGLFW() {
+	glfwSetErrorCallback(error_callback);
+	// initialize GLFW
+    if( !glfwInit() ) {
+        fprintf( stderr, "[ERROR]: Could not initialize GLFW\n" );
+        _errorCode = OPENGL_ENGINE_ERROR_GLFW_INIT;
+    } else {
+		if(DEBUG) fprintf( stdout, "[INFO]: GLFW %d.%d.%d initialized\n", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION );
 
-	glCompileShader(id);
+		glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, _majorVersion );	        // request OpenGL vX.
+		glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, _minorVersion );	        // request OpenGL v.X
+		glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );                  // request forward compatible OpenGL context
+		glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );        // request OpenGL Core Profile context
+		glfwWindowHint( GLFW_DOUBLEBUFFER, GLFW_TRUE );                             // request double buffering
+		glfwWindowHint( GLFW_RESIZABLE, _windowResizable );		                // set if our window should be able to be resized
+		
+		// create a window for a given size, with a given title
+		_window = glfwCreateWindow( _windowWidth, _windowHeight, _windowTitle, nullptr, nullptr );
+		if( !_window ) {						                                // if the window could not be created, NULL is returned
+			fprintf( stderr, "[ERROR]: GLFW Window could not be created\n" );
+			glfwTerminate();
+			_errorCode = OPENGL_ENGINE_ERROR_GLFW_WINDOW;
+		} else {
+			if(DEBUG) fprintf( stdout, "[INFO]: GLFW Window created\n" );
+			glfwMakeContextCurrent(_window);		                                // make the created window the current window
+			glfwSwapInterval(1);				                            // update our screen after at least 1 screen refresh
 
-	char error[1000];
+			glfwSetWindowUserPointer(_window, (void*)this);
+			glfwSetWindowSizeCallback(_window, window_resize_callback);
+		}
 
-	glGetShaderInfoLog(id,1000,NULL,error);
-	printf("Compile status: \n %s\n",error);
-
-	return id;
+		glfwSetKeyCallback(_window, key_callback);
+		glfwSetMouseButtonCallback(_window, mouse_button_callback);
+		glfwSetCursorPosCallback(_window, cursor_pos_callback);
+		glfwSetScrollCallback(_window, scroll_callback);
+	}
 }
 
-void initWindow() {
+void OGLEngine::_setupOGL() {
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+void OGLEngine::_setupWindow() {
 	glfwSetErrorCallback(error_callback);
     if (!glfwInit())
         exit(EXIT_FAILURE);
@@ -271,17 +188,17 @@ void initWindow() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
-    window = glfwCreateWindow(1200, 600, "A2", NULL, NULL);
-    if (!window)
+    _window = glfwCreateWindow(1200, 600, "A2", NULL, NULL);
+    if (!_window)
     {
 		std::cout << "Error setting up winodow\n";
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-    glfwSetKeyCallback(window, key_callback);
-	glfwSetMouseButtonCallback(window, mouse_button_callback);
-	glfwSetCursorPosCallback(window, cursor_pos_callback);
-    glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(_window, key_callback);
+	glfwSetMouseButtonCallback(_window, mouse_button_callback);
+	glfwSetCursorPosCallback(_window, cursor_pos_callback);
+    glfwMakeContextCurrent(_window);
     glfwSwapInterval(1);
 
 	gladLoadGL();
@@ -339,7 +256,7 @@ void OGLEngine::_setupShaders()
 	tcsSource_teapot[0]='\0';
 	tesSource_teapot[0]='\0';
 
-	phongProgram = glCreateProgram();
+	wireframeProgram = glCreateProgram();
 	teapotProgram = glCreateProgram();
 
 	readShader("shader/wireframe_vertex.vs",vsSource_wireframe);
@@ -362,9 +279,9 @@ void OGLEngine::_setupShaders()
 	tcsTeapot = loadShader(tcsSource_teapot, GL_TESS_CONTROL_SHADER);
 	tesTeapot = loadShader(tesSource_teapot, GL_TESS_EVALUATION_SHADER);
 
-	glAttachShader(phongProgram,vsWireframe);
-	glAttachShader(phongProgram,fsWireframe);
-	glAttachShader(phongProgram,gsWireframe);
+	glAttachShader(wireframeProgram,vsWireframe);
+	glAttachShader(wireframeProgram,fsWireframe);
+	glAttachShader(wireframeProgram,gsWireframe);
 
 	glAttachShader(teapotProgram,vsTeapot);
 	glAttachShader(teapotProgram,fsTeapot);
@@ -372,10 +289,10 @@ void OGLEngine::_setupShaders()
 	glAttachShader(teapotProgram,tcsTeapot);
 	glAttachShader(teapotProgram,tesTeapot);
 
-	glLinkProgram(phongProgram);
+	glLinkProgram(wireframeProgram);
 	glLinkProgram(teapotProgram); 
 
-	glUseProgram(phongProgram);
+	glUseProgram(wireframeProgram);
 	
 }
 
@@ -519,6 +436,136 @@ void OGLEngine::_setupBuffers() {
 	glBindVertexArray(0);
 }
 
+void OGLEngine::_setupTextures() {
+	return;
+}
+
+void OGLEngine::_setupScene() {
+
+	// sets up cameras
+	_arcballCam = new ArcballCam();
+	_arcballCam->setLookAtPoint(glm::vec3(0.0f, 0.0f, 0.0f));
+	_arcballCam->setTheta(-M_PI/3.0f);
+	_arcballCam->setPhi(M_PI/2.0f);
+	_arcballCam->setRadius(4);
+	_arcballCam->recomputeOrientation();
+
+	_freeCam = new FreeCam();
+	_freeCam->setLookAtPoint(glm::vec3(60, 30, 20));
+    _freeCam->setTheta( -M_PI / 3.0f );
+    _freeCam->setPhi( M_PI / 2.8f );
+    _freeCam->recomputeOrientation();
+    _freeCamSpeed = glm::vec2(0.25f, 0.04f);
+}
+
+int storeTex( GLubyte * data, int w, int h ) {
+	GLuint texID;
+	glGenTextures(1, &texID);
+
+	glBindTexture(GL_TEXTURE_2D, texID);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
+	glTexSubImage2D(GL_TEXTURE_2D,0,0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	return texID;
+}
+
+int generate2DTex(float baseFreq = 4.0f, float persistence = 0.5f, int w = 128, int h = 128, bool periodic = false) {
+
+	int width = w;
+	int height = h;
+
+	printf("Generating noise texture...");
+
+	GLubyte *data = new GLubyte[ width * height * 4 ];
+
+	float xFactor = 1.0f / (width - 1);
+	float yFactor = 1.0f / (height - 1);
+
+	for( int row = 0; row < height; row++ ) {
+		for( int col = 0 ; col < width; col++ ) {
+			float x = xFactor * col;
+			float y = yFactor * row;
+			float sum = 0.0f;
+			float freq = baseFreq;
+			float persist = persistence;
+			for( int oct = 0; oct < 4; oct++ ) {
+				glm::vec2 p(x * freq, y * freq);
+
+				float val = 0.0f;
+				if (periodic) {
+					val = glm::perlin(p, glm::vec2(freq)) * persist;
+				} else {
+					val = glm::perlin(p) * persist;
+				}
+
+				sum += val;
+
+				float result = (sum + 1.0f) / 2.0f;
+
+				// Clamp strictly between 0 and 1
+				result = result > 1.0f ? 1.0f : result;
+				result = result < 0.0f ? 0.0f : result;
+
+				// Store in texture
+				data[((row * width + col) * 4) + oct] = (GLubyte) ( result * 255.0f );
+				freq *= 2.0f;
+				persist *= persistence;
+			}
+		}
+	}
+
+	int texID = storeTex(data, width, height);
+	delete [] data;
+
+	printf("done.\n");
+	return texID;
+}
+
+int generatePeriodic2DTex(float baseFreq = 4.0f, float persist = 0.5f, int w = 128, int h = 128) {
+	return generate2DTex(baseFreq, persist, w, h, true);
+}
+
+void readShader(const char* fname, char *source)
+{
+	FILE *fp;
+	fp = fopen(fname,"r");
+	if (fp==NULL)
+	{
+		fprintf(stderr,"The shader file %s cannot be opened!\n",fname);
+		glfwTerminate();
+		exit(1);
+	}
+	char tmp[300];
+	while (fgets(tmp,300,fp)!=NULL)
+	{
+		strcat(source,tmp);
+		strcat(source,"\n");
+	}
+}
+
+unsigned int loadShader(const char *source, unsigned int mode)
+{
+	GLuint id;
+	id = glCreateShader(mode);
+
+	glShaderSource(id,1,&source,NULL);
+
+	glCompileShader(id);
+
+	char error[1000];
+
+	glGetShaderInfoLog(id,1000,NULL,error);
+	printf("Compile status: \n %s\n",error);
+
+	return id;
+}
+
+
+
 void showFPS(GLFWwindow* window) {
         double currentTime = glfwGetTime();
         double delta = currentTime - lastTime;
@@ -542,7 +589,7 @@ void OGLEngine::run()
 	GLint cameraPos_location_phong;
 	GLint lineWidth_location, lineColor_location;
 
-	initWindow();
+	_setupWindow();
 	_setupBuffers();
     _setupShaders();
 
@@ -556,14 +603,14 @@ void OGLEngine::run()
     mat4 mvp, view, projection, model, mv;
 	mat3 normalMtx;
 
-	mvp_location_phong = glGetUniformLocation(phongProgram,"MVP");
-	mv_location_phong = glGetUniformLocation(phongProgram, "MV");
-	model_location_phong = glGetUniformLocation(phongProgram, "modelMtx");
-	normal_location_phong = glGetUniformLocation(phongProgram, "normalMtx");
-	viewport_location = glGetUniformLocation(phongProgram, "viewportMatrix");
-	cameraPos_location_phong = glGetUniformLocation(phongProgram, "cameraPos");
-	lineWidth_location = glGetUniformLocation(phongProgram, "Line.width");
-	lineColor_location = glGetUniformLocation(phongProgram, "Line.color");
+	mvp_location_phong = glGetUniformLocation(wireframeProgram,"MVP");
+	mv_location_phong = glGetUniformLocation(wireframeProgram, "MV");
+	model_location_phong = glGetUniformLocation(wireframeProgram, "modelMtx");
+	normal_location_phong = glGetUniformLocation(wireframeProgram, "normalMtx");
+	viewport_location = glGetUniformLocation(wireframeProgram, "viewportMatrix");
+	cameraPos_location_phong = glGetUniformLocation(wireframeProgram, "cameraPos");
+	lineWidth_location = glGetUniformLocation(wireframeProgram, "Line.width");
+	lineColor_location = glGetUniformLocation(wireframeProgram, "Line.color");
 	
 	glClearColor(0.1,0.1,0.1,0);
 
@@ -574,8 +621,8 @@ void OGLEngine::run()
     tPrev = 0;
     rotSpeed = glm::pi<float>()/800.0f;
 
-	GLuint phongSpecPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "specularPhong");
-	GLuint blinnSpecPhong = glGetSubroutineIndex(phongProgram, GL_FRAGMENT_SHADER, "specularBlinnPhong");
+	GLuint phongSpecPhong = glGetSubroutineIndex(wireframeProgram, GL_FRAGMENT_SHADER, "specularPhong");
+	GLuint blinnSpecPhong = glGetSubroutineIndex(wireframeProgram, GL_FRAGMENT_SHADER, "specularBlinnPhong");
 
 	glUniform1i(glGetUniformLocation(teapotProgram,"TessLevel"), tessLevel);
     glUniform1f(glGetUniformLocation(teapotProgram,"LineWidth"), 0.8f);
@@ -586,10 +633,25 @@ void OGLEngine::run()
 
 	glPatchParameteri(GL_PATCH_VERTICES, 16);
 
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(_window))
     {
+		glDrawBuffer(GL_BACK);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		GLint framebufferWidth, framebufferHeight;
+        glfwGetFramebufferSize( _window, &framebufferWidth, &framebufferHeight );
+
+		glViewport( 0, 0, framebufferWidth, framebufferHeight );
+
+		glm::mat4 viewMatrix;
+
+		// set the projection matrix based on the window size
+        // use a perspective projection that ranges
+        // with a FOV of 45 degrees, for our current aspect ratio, and Z ranges from [0.001, 1000].
+        glm::mat4 projectionMatrix = glm::perspective( 45.0f, (GLfloat) framebufferWidth / (GLfloat) framebufferHeight, 0.001f, 1000.0f );
+
 		model = mat4(1.0f);
-		glUseProgram(phongProgram);
+		glUseProgram(wireframeProgram);
 
 		
 		glUniform3fv(cameraPos_location_phong, 1, &(cameraPos)[0]);
@@ -600,7 +662,7 @@ void OGLEngine::run()
 		
         float ratio;
 		int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(_window, &width, &height);
         glViewport(0, 0, width, height);
 
 		float w2 = width / 2.0f;
@@ -675,13 +737,88 @@ void OGLEngine::run()
 	    
     	glBindVertexArray(0);
 
-		showFPS(window);
+		showFPS(_window);
 
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(_window);
         glfwPollEvents();
     }
-	
-    glfwDestroyWindow(window);
-    glfwTerminate();
-    exit(EXIT_SUCCESS);
 }
+
+void OGLEngine::shutdown() {
+	if(!_isCleanedUp) {
+		_cleanupShaders();
+		_cleanupBuffers();
+		_cleanupTextures();
+		_cleanupScene();
+		_cleanupOGL();
+		_cleanupGLFW();
+	}
+}
+
+void OGLEngine::_cleanupShaders() {
+	
+}
+
+/*
+GLuint icoVAO;
+GLuint cubeVAO;
+GLuint teapotVAO;
+GLuint groundVAO;
+*/
+
+void OGLEngine::_cleanupBuffers() {
+	glDeleteVertexArrays(1, &icoVAO);
+	glDeleteVertexArrays(1, &cubeVAO);
+	glDeleteVertexArrays(1, &teapotVAO);
+	glDeleteVertexArrays(1, &groundVAO);
+}
+
+void OGLEngine::_cleanupTextures() {
+	
+}
+
+void OGLEngine::_cleanupScene() {
+	delete _arcballCam;
+	delete _freeCam;
+}
+
+void OGLEngine::_cleanupOGL() {
+	// nothing to do here, actually. 
+}
+
+void OGLEngine::_cleanupGLFW() {
+	glfwDestroyWindow(_window);
+	_window = nullptr;
+	glfwTerminate();
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    auto engine = (OGLEngine*) glfwGetWindowUserPointer(window);
+
+	engine->keyEventHandler(key, action);
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+	auto engine = (OGLEngine*) glfwGetWindowUserPointer(window);
+	engine->mbEventHandler(button, action);
+}
+
+void cursor_pos_callback(GLFWwindow* window, double x, double y) {
+	auto engine = (OGLEngine*) glfwGetWindowUserPointer(window);
+	engine->cursorPosEventHandler(glm::vec2(x, y));
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+	auto engine = (OGLEngine*) glfwGetWindowUserPointer(window);
+	engine->scrollWheelEventHandler(yoffset);
+}
+
+void error_callback(int error, const char* description) {
+    fprintf(stderr, "Error: %s\n", description);
+}
+
+void window_resize_callback(GLFWwindow* window, int width, int height) {
+	auto engine = (OGLEngine*) glfwGetWindowUserPointer(window);
+	engine->windowResizeHandler(width, height);
+}
+

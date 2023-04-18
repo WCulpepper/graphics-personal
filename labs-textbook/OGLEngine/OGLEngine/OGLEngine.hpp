@@ -15,12 +15,14 @@ public:
 
     void initialize();
     void run();
+    void shutdown();
 
     // Event handlers
     void keyEventHandler(GLint key, GLint action);
     void mbEventHandler(GLint button, GLint action);
     void cursorPosEventHandler(glm::vec2 mousePosition);
     void scrollWheelEventHandler(double offset);
+    void windowResizeHandler(int width, int height);
 
     static constexpr GLfloat MOUSE_UNINIT = -9999.0f;
 
@@ -47,9 +49,13 @@ public:
     static const unsigned int OPENGL_ENGINE_ERROR_GLEW_INIT     = 3;
 
 private:
+
+    bool _isInitialized;
+    bool _isCleanedUp;
     
     void _setupGLFW();
     void _setupOGL();
+    void _setupWindow();
     void _setupShaders();
     void _setupBuffers();
     void _setupTextures();
@@ -57,7 +63,21 @@ private:
 
     void _cleanupBuffers();
     void _cleanupShaders();
+    void _cleanupTextures();
     void _cleanupScene();
+    void _cleanupOGL();
+    void _cleanupGLFW();
+
+    unsigned int _errorCode;
+    int _majorVersion;
+    int _minorVersion;
+    int _windowWidth;
+    int _windowHeight;
+    int _windowResizable;
+    char* _windowTitle;
+    GLFWwindow* _window;
+
+    bool DEBUG = false;
 
     void _renderScene(glm::mat4 viewMtx, glm::mat4 projMtx);
     void _updateScene();
@@ -91,17 +111,38 @@ private:
     GLuint _ibos[NUM_VAOS];
     // number of points that make up our VAO
     GLsizei _numVAOPoints[NUM_VAOS];
-protected:
-    unsigned int _errorCode;
-    int _majorVersion;
-    int _minorVersion;
-    int _windowWidth;
-    int _windowHeight;
-    int _windowResizable;
-    char* _windowTitle;
-    GLFWwindow* _window;
 
-    static void _windowResizeCallback(GLFWwindow* window, int width, int height);
+    struct WFUniformLocations {
+        GLint mvpMtx;
+        GLint mvMtx;
+        GLint modelMtx;
+        GLint normalMtx;
+        GLint viewportMatrix;
+        GLint cameraPos;
+        GLint lineWidth;
+        GLint lineColor;
+    } _wfUniformLocations;
+
+    struct WFAttrLocations {
+        GLint vPos;
+        GLint vNormal;
+    } _wfUniformLocations;
+
+    struct TessUniformLocations {
+        GLint mvpMtx;
+        GLint mvMtx;
+        GLint modelMtx;
+        GLint normalMtx;
+        GLint viewportMatrix;
+        GLint cameraPos;
+        GLint lineWidth;
+        GLint lineColor;
+        GLint tessLevel;
+    } _tessUniformLocations;
+
+    struct TessAttrLocations {
+        GLint vPos;
+    } _tessUniformLocations;
 };
 
 #endif // OGL_ENGINE_HPP
