@@ -1,11 +1,12 @@
-set(target A2)
+set(target OGLEngine)
 
-set( A2_SOURCES
+set( ENGINE_SOURCES
 	OGLEngine.cpp
 	OGLEngine.hpp
+	main.cpp
 	 )
 
-add_executable( ${target} ${A2_SOURCES} )
+add_executable( ${target} ${ENGINE_SOURCES} )
 
 target_compile_definitions(${target}
 		PRIVATE

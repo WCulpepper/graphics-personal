@@ -4,8 +4,19 @@
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <ArcballCam.hpp>
-#include <FreeCam.hpp>
+#include <glm/gtc/noise.hpp>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string>
+#include <cstring>
+#include <vector>
+#include <math.h>
+#include <iostream>
+
+
+#include "ArcballCam.hpp"
+#include "FreeCam.hpp"
+#include "teapotpatch.h"
 
 class OGLEngine {
 public: 
@@ -55,11 +66,15 @@ private:
     
     void _setupGLFW();
     void _setupOGL();
-    void _setupWindow();
     void _setupShaders();
     void _setupBuffers();
     void _setupTextures();
     void _setupScene();
+
+
+
+    void _renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx);
+    void _updateScene();
 
     void _cleanupBuffers();
     void _cleanupShaders();
@@ -79,9 +94,6 @@ private:
 
     bool DEBUG = false;
 
-    void _renderScene(glm::mat4 viewMtx, glm::mat4 projMtx);
-    void _updateScene();
-
     // keyboard input tracking
     static constexpr GLuint NUM_KEYS = GLFW_KEY_LAST;
     GLboolean _keys[NUM_KEYS];
@@ -94,7 +106,16 @@ private:
     FreeCam* _freeCam;
     glm::vec2 _freeCamSpeed;
     glm::vec3 _cameraPos;
+    GLfloat _cameraAngle;
+
     int _selectedCam;
+    GLfloat _rotSpeed;
+
+    GLfloat _deltaT;
+    GLfloat _tPrev;
+
+    GLuint _wireframeProgram;
+    GLuint _teapotProgram;
 
     static constexpr int NUM_VAOS = 4;
     enum VAO_ID {
@@ -117,32 +138,50 @@ private:
         GLint mvMtx;
         GLint modelMtx;
         GLint normalMtx;
-        GLint viewportMatrix;
+        GLint viewportMtx;
         GLint cameraPos;
         GLint lineWidth;
         GLint lineColor;
     } _wfUniformLocations;
 
-    struct WFAttrLocations {
-        GLint vPos;
-        GLint vNormal;
-    } _wfUniformLocations;
+    struct WFSubroutineLocations {
+        GLuint phongSpec;
+        GLuint blinnPhongSpec;
+    } _wfSubroutineLocations;
 
     struct TessUniformLocations {
         GLint mvpMtx;
         GLint mvMtx;
         GLint modelMtx;
         GLint normalMtx;
-        GLint viewportMatrix;
+        GLint viewportMtx;
         GLint cameraPos;
         GLint lineWidth;
         GLint lineColor;
         GLint tessLevel;
+        GLint lightIntensity;
+        GLint lightPos;
+        GLint kd;
     } _tessUniformLocations;
 
-    struct TessAttrLocations {
-        GLint vPos;
-    } _tessUniformLocations;
+    struct SceneObjects {
+        TeapotPatch teapot;
+    } objects;
+
 };
+
+void readShader(const char* fname, char *source);
+unsigned int loadShader(const char *source, unsigned int mode);
+void showFPS(GLFWwindow* window);
+
+int generate2DTex(float baseFreq = 4.0f, float persistence = 0.5f, int w = 128, int h = 128, bool periodic = false);
+int generatePeriodic2DTex(float baseFreq = 4.0f, float persist = 0.5f, int w = 128, int h = 128);
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void cursor_pos_callback(GLFWwindow* window, double x, double y);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void error_callback(int error, const char* description);
+void window_resize_callback(GLFWwindow* window, int width, int height);
 
 #endif // OGL_ENGINE_HPP

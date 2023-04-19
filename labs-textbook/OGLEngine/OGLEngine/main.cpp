@@ -1,4 +1,4 @@
-#include <OGLEngine.hpp>
+#include "OGLEngine.hpp"
 
 int main() {
     auto engine = new OGLEngine(4, 6, 1280, 1440, "OpenGL Engine");

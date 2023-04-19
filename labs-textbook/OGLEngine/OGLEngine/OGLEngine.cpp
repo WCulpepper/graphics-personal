@@ -1,27 +1,9 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/gtc/noise.hpp>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string>
-#include <cstring>
-#include <vector>
-#include <math.h>
-#include <iostream>
-#include <OGLEngine.hpp>
-#include "teapotpatch.h"
-#include "teapotdata.h"
+
+#include "OGLEngine.hpp"
 
 // the X and Z values are for drawing an icosahedron
 #define IX 0.525731112119133606 
 #define IZ 0.850650808352039932
-
-#ifndef M_PI
-#define M_PI 3.14159265
-#endif
-
-GLuint wireframeProgram;
-GLuint teapotProgram;
 
 GLuint icoVAO;
 GLuint cubeVAO;
@@ -180,53 +162,6 @@ void OGLEngine::_setupOGL() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-void OGLEngine::_setupWindow() {
-	glfwSetErrorCallback(error_callback);
-    if (!glfwInit())
-        exit(EXIT_FAILURE);
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-
-    _window = glfwCreateWindow(1200, 600, "A2", NULL, NULL);
-    if (!_window)
-    {
-		std::cout << "Error setting up winodow\n";
-        glfwTerminate();
-        exit(EXIT_FAILURE);
-    }
-    glfwSetKeyCallback(_window, key_callback);
-	glfwSetMouseButtonCallback(_window, mouse_button_callback);
-	glfwSetCursorPosCallback(_window, cursor_pos_callback);
-    glfwMakeContextCurrent(_window);
-    glfwSwapInterval(1);
-
-	gladLoadGL();
-
-	const GLubyte *renderer = glGetString( GL_RENDERER );
-	const GLubyte *vendor = glGetString( GL_VENDOR );
-	const GLubyte *version = glGetString( GL_VERSION );
-	const GLubyte *glslVersion = glGetString( GL_SHADING_LANGUAGE_VERSION );
-
-	GLint major, minor;
-	glGetIntegerv(GL_MAJOR_VERSION, &major);
-	glGetIntegerv(GL_MINOR_VERSION, &minor);
-
-	printf("GL Vendor            : %s\n", vendor);
-	printf("GL Renderer          : %s\n", renderer);
-	printf("GL Version (string)  : %s\n", version);
-	printf("GL Version (integer) : %d.%d\n", major, minor);
-	printf("GLSL Version         : %s\n", glslVersion);
-}
-
-void OGLEngine::_setupGLFW() {
-
-}
-
-void OGLEngine::_setupOGL() {
-
-}
-
 void OGLEngine::_setupShaders()
 {
 	char *vsSource_wireframe, *fsSource_wireframe, *gsSource_wireframe, 
@@ -256,8 +191,8 @@ void OGLEngine::_setupShaders()
 	tcsSource_teapot[0]='\0';
 	tesSource_teapot[0]='\0';
 
-	wireframeProgram = glCreateProgram();
-	teapotProgram = glCreateProgram();
+	_wireframeProgram = glCreateProgram();
+	_teapotProgram = glCreateProgram();
 
 	readShader("shader/wireframe_vertex.vs",vsSource_wireframe);
 	readShader("shader/wireframe_fragment.fs",fsSource_wireframe);
@@ -279,21 +214,52 @@ void OGLEngine::_setupShaders()
 	tcsTeapot = loadShader(tcsSource_teapot, GL_TESS_CONTROL_SHADER);
 	tesTeapot = loadShader(tesSource_teapot, GL_TESS_EVALUATION_SHADER);
 
-	glAttachShader(wireframeProgram,vsWireframe);
-	glAttachShader(wireframeProgram,fsWireframe);
-	glAttachShader(wireframeProgram,gsWireframe);
+	glAttachShader(_wireframeProgram,vsWireframe);
+	glAttachShader(_wireframeProgram,fsWireframe);
+	glAttachShader(_wireframeProgram,gsWireframe);
 
-	glAttachShader(teapotProgram,vsTeapot);
-	glAttachShader(teapotProgram,fsTeapot);
-	glAttachShader(teapotProgram,gsTeapot);
-	glAttachShader(teapotProgram,tcsTeapot);
-	glAttachShader(teapotProgram,tesTeapot);
+	glAttachShader(_teapotProgram,vsTeapot);
+	glAttachShader(_teapotProgram,fsTeapot);
+	glAttachShader(_teapotProgram,gsTeapot);
+	glAttachShader(_teapotProgram,tcsTeapot);
+	glAttachShader(_teapotProgram,tesTeapot);
 
-	glLinkProgram(wireframeProgram);
-	glLinkProgram(teapotProgram); 
+	glLinkProgram(_wireframeProgram);
+	glLinkProgram(_teapotProgram); 
 
-	glUseProgram(wireframeProgram);
-	
+	glUseProgram(_wireframeProgram);
+
+	_wfUniformLocations.mvpMtx = glGetUniformLocation(_wireframeProgram,"MVP");
+	_wfUniformLocations.mvMtx = glGetUniformLocation(_wireframeProgram, "MV");
+	_wfUniformLocations.modelMtx = glGetUniformLocation(_wireframeProgram, "modelMtx");
+	_wfUniformLocations.normalMtx = glGetUniformLocation(_wireframeProgram, "normalMtx");
+	_wfUniformLocations.viewportMtx = glGetUniformLocation(_wireframeProgram, "viewportMatrix");
+	_wfUniformLocations.cameraPos = glGetUniformLocation(_wireframeProgram, "cameraPos");
+	_wfUniformLocations.lineWidth = glGetUniformLocation(_wireframeProgram, "Line.width");
+	_wfUniformLocations.lineColor = glGetUniformLocation(_wireframeProgram, "Line.color");
+
+	_wfSubroutineLocations.phongSpec = glGetSubroutineIndex(_wireframeProgram, GL_FRAGMENT_SHADER, "specularPhong");
+	_wfSubroutineLocations.blinnPhongSpec = glGetSubroutineIndex(_wireframeProgram, GL_FRAGMENT_SHADER, "specularBlinnPhong");
+
+	_tessUniformLocations.mvMtx = glGetUniformLocation(_teapotProgram,"ModelViewMatrix");
+	_tessUniformLocations.normalMtx = glGetUniformLocation(_teapotProgram,"NormalMatrix");
+	_tessUniformLocations.mvpMtx = glGetUniformLocation(_teapotProgram,"MVP");
+	_tessUniformLocations.viewportMtx = glGetUniformLocation(_teapotProgram,"ViewportMatrix");
+	_tessUniformLocations.tessLevel = glGetUniformLocation(_teapotProgram,"TessLevel");
+
+	_tessUniformLocations.lineWidth = glGetUniformLocation(_teapotProgram,"LineWidth");
+	_tessUniformLocations.lineColor = glGetUniformLocation(_teapotProgram,"LineColor");
+	_tessUniformLocations.lightIntensity = glGetUniformLocation(_teapotProgram,"LightIntensity");
+	_tessUniformLocations.lightPos = glGetUniformLocation(_teapotProgram,"LightPosition");
+	_tessUniformLocations.kd = glGetUniformLocation(_teapotProgram,"Kd");
+
+	glUniform4f(_wfUniformLocations.lineColor, 1.0f,1.0f,1.0f,1.0f);
+	glUniform1f(_wfUniformLocations.lineWidth, 0.8f);
+	glUniform1f(_tessUniformLocations.lineWidth, 0.8f);
+    glUniform4f(_tessUniformLocations.lineColor, 1.0f,1.0f,1.0f,1.0f);
+    glUniform4f(_tessUniformLocations.lightPos, 0.0f,0.0f,0.0f,1.0f);
+    glUniform3f(_tessUniformLocations.lightIntensity, 1.0f,1.0f,1.0f);
+    glUniform3f(_tessUniformLocations.kd, 0.9f,0.9f,1.0f);
 }
 
 void OGLEngine::_setupBuffers() {
@@ -456,6 +422,13 @@ void OGLEngine::_setupScene() {
     _freeCam->setPhi( M_PI / 2.8f );
     _freeCam->recomputeOrientation();
     _freeCamSpeed = glm::vec2(0.25f, 0.04f);
+
+	_cameraPos = vec3(-2.0f, 1.5f, 2.0f);
+	_cameraAngle = glm::radians(140.0f);
+    _rotSpeed = glm::pi<float>()/800.0f;
+	_deltaT = 0;
+	_tPrev = 0;
+
 }
 
 int storeTex( GLubyte * data, int w, int h ) {
@@ -473,7 +446,7 @@ int storeTex( GLubyte * data, int w, int h ) {
 	return texID;
 }
 
-int generate2DTex(float baseFreq = 4.0f, float persistence = 0.5f, int w = 128, int h = 128, bool periodic = false) {
+int generate2DTex(float baseFreq, float persistence, int w, int h, bool periodic) {
 
 	int width = w;
 	int height = h;
@@ -525,12 +498,11 @@ int generate2DTex(float baseFreq = 4.0f, float persistence = 0.5f, int w = 128, 
 	return texID;
 }
 
-int generatePeriodic2DTex(float baseFreq = 4.0f, float persist = 0.5f, int w = 128, int h = 128) {
+int generatePeriodic2DTex(float baseFreq, float persist, int w, int h) {
 	return generate2DTex(baseFreq, persist, w, h, true);
 }
 
-void readShader(const char* fname, char *source)
-{
+void readShader(const char* fname, char *source) {
 	FILE *fp;
 	fp = fopen(fname,"r");
 	if (fp==NULL)
@@ -547,8 +519,7 @@ void readShader(const char* fname, char *source)
 	}
 }
 
-unsigned int loadShader(const char *source, unsigned int mode)
-{
+unsigned int loadShader(const char *source, unsigned int mode) {
 	GLuint id;
 	id = glCreateShader(mode);
 
@@ -564,8 +535,6 @@ unsigned int loadShader(const char *source, unsigned int mode)
 	return id;
 }
 
-
-
 void showFPS(GLFWwindow* window) {
         double currentTime = glfwGetTime();
         double delta = currentTime - lastTime;
@@ -580,57 +549,99 @@ void showFPS(GLFWwindow* window) {
             lastTime = currentTime;
         }
 }
+
+void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx) {
+	if(!_wireframeProgram || !_teapotProgram) {
+		std::cout << "Failed to load shader programs!\n"; 
+		return;
+	}
+
+	glm::mat4 model, mv, mvp;
+	glm::mat3 normalMtx;
+
+	glUniform1i(_tessUniformLocations.tessLevel, tessLevel);
     
+
+	model = mat4(1.0f);
+	glUseProgram(_wireframeProgram);
+
+	
+
+	model = glm::rotate(model, _cameraAngle, vec3(0.0f, 1.0f, 0.0f));
+	mv = viewMtx * model;
+	mvp = projMtx * viewMtx * model;
+	normalMtx = glm::mat3(glm::transpose(glm::inverse(mv)));
+	glm::mat3 nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+
+	glUniformMatrix4fv(_wfUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
+	glUniformMatrix4fv(_wfUniformLocations.mvMtx, 1, GL_FALSE, &(mv)[0][0]);
+	glUniformMatrix4fv(_wfUniformLocations.modelMtx, 1, GL_FALSE, &(model)[0][0]);
+	glUniformMatrix4fv(_wfUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
+	glUniformMatrix4fv(_wfUniformLocations.viewportMtx, 1, GL_FALSE, &(viewportMtx)[0][0]);
+
+	if(usePhongSpec) {
+		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &_wfSubroutineLocations.phongSpec);
+	} else {
+		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &_wfSubroutineLocations.blinnPhongSpec);
+	}
+
+	switch(modelToRender){
+		case 1: 
+			glBindVertexArray(icoVAO);
+			glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
+			break;
+		case 2:
+			glBindVertexArray(cubeVAO);
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
+			break;
+		case 3:
+			glUseProgram(_teapotProgram);
+			model = glm::scale(model, vec3(0.25, 0.25, 0.25));
+			model = glm::rotate(model, glm::radians(-90.0f), vec3(1,0,0));
+			mv = viewMtx * model;
+			nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+			mvp = projMtx * viewMtx * model;
+
+			glUniformMatrix4fv(_tessUniformLocations.mvMtx, 1, GL_FALSE, &(mv)[0][0]);
+			glUniformMatrix3fv(_tessUniformLocations.normalMtx, 1, GL_FALSE, &(nm)[0][0]);
+			glUniformMatrix4fv(_tessUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
+			glUniformMatrix4fv(_tessUniformLocations.viewportMtx, 1, GL_FALSE, &(viewportMtx)[0][0]);
+
+			glUniform1i(_tessUniformLocations.tessLevel, tessLevel);
+			objects.teapot.render();
+			break;
+		default: break;
+	}
+
+	
+
+	glBindVertexArray(groundVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glBindVertexArray(0);
+
+}
+
+void OGLEngine::_updateScene() {
+	float t = float(glfwGetTime());
+	_deltaT = t - _tPrev;
+	if(_tPrev == 0.0f) _deltaT = 0.0f;
+	_tPrev = t;
+	
+	_cameraAngle += 0.005f;
+	if (_cameraAngle > glm::two_pi<float>()) _cameraAngle -= glm::two_pi<float>();
+
+	_cameraPos = vec3(2.0f * cos(_cameraAngle), 1.5f, 2.0f * sin(_cameraAngle));
+}
+
 void OGLEngine::run()
 {	
-	GLint mvp_location_phong, model_location_phong, mv_location_phong;
-	GLint normal_location_phong;
-	GLint viewport_location;
-	GLint cameraPos_location_phong;
-	GLint lineWidth_location, lineColor_location;
 
-	_setupWindow();
-	_setupBuffers();
-    _setupShaders();
-
-	TeapotPatch teapot;
+	glm::mat4 viewMatrix, projectionMatrix;
 
     glEnable(GL_DEPTH_TEST);
-
-	float angle = 0;
-	
-    vec3 cameraPos = vec3(-2.0f, 1.5f, 2.0f);
-    mat4 mvp, view, projection, model, mv;
-	mat3 normalMtx;
-
-	mvp_location_phong = glGetUniformLocation(wireframeProgram,"MVP");
-	mv_location_phong = glGetUniformLocation(wireframeProgram, "MV");
-	model_location_phong = glGetUniformLocation(wireframeProgram, "modelMtx");
-	normal_location_phong = glGetUniformLocation(wireframeProgram, "normalMtx");
-	viewport_location = glGetUniformLocation(wireframeProgram, "viewportMatrix");
-	cameraPos_location_phong = glGetUniformLocation(wireframeProgram, "cameraPos");
-	lineWidth_location = glGetUniformLocation(wireframeProgram, "Line.width");
-	lineColor_location = glGetUniformLocation(wireframeProgram, "Line.color");
-	
 	glClearColor(0.1,0.1,0.1,0);
-
-	float tPrev, rotSpeed, t, deltaT;
-
-	angle = glm::radians(140.0f);
-
-    tPrev = 0;
-    rotSpeed = glm::pi<float>()/800.0f;
-
-	GLuint phongSpecPhong = glGetSubroutineIndex(wireframeProgram, GL_FRAGMENT_SHADER, "specularPhong");
-	GLuint blinnSpecPhong = glGetSubroutineIndex(wireframeProgram, GL_FRAGMENT_SHADER, "specularBlinnPhong");
-
-	glUniform1i(glGetUniformLocation(teapotProgram,"TessLevel"), tessLevel);
-    glUniform1f(glGetUniformLocation(teapotProgram,"LineWidth"), 0.8f);
-    glUniform4f(glGetUniformLocation(teapotProgram,"LineColor"), 1.0f,1.0f,1.0f,1.0f);
-    glUniform4f(glGetUniformLocation(teapotProgram,"LightPosition"), 0.0f,0.0f,0.0f,1.0f);
-    glUniform3f(glGetUniformLocation(teapotProgram,"LightIntensity"), 1.0f,1.0f,1.0f);
-    glUniform3f(glGetUniformLocation(teapotProgram,"Kd"), 0.9f,0.9f,1.0f);
-
+	
 	glPatchParameteri(GL_PATCH_VERTICES, 16);
 
     while (!glfwWindowShouldClose(_window))
@@ -643,101 +654,23 @@ void OGLEngine::run()
 
 		glViewport( 0, 0, framebufferWidth, framebufferHeight );
 
-		glm::mat4 viewMatrix;
-
 		// set the projection matrix based on the window size
         // use a perspective projection that ranges
         // with a FOV of 45 degrees, for our current aspect ratio, and Z ranges from [0.001, 1000].
-        glm::mat4 projectionMatrix = glm::perspective( 45.0f, (GLfloat) framebufferWidth / (GLfloat) framebufferHeight, 0.001f, 1000.0f );
-
-		model = mat4(1.0f);
-		glUseProgram(wireframeProgram);
-
+        projectionMatrix = glm::perspective( 45.0f, (GLfloat) framebufferWidth / (GLfloat) framebufferHeight, 0.001f, 1000.0f );
 		
-		glUniform3fv(cameraPos_location_phong, 1, &(cameraPos)[0]);
-		view = glm::lookAt(cameraPos, vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f));
+		glUniform3fv(_wfUniformLocations.cameraPos, 1, &(_cameraPos)[0]);
+		viewMatrix = _arcballCam->getViewMatrix();
 
-		glUniform4f(lineColor_location, 1.0f,1.0f,1.0f,1.0f);
-		glUniform1f(lineWidth_location, 0.8f);
-		
-        float ratio;
-		int width, height;
-        glfwGetFramebufferSize(_window, &width, &height);
-        glViewport(0, 0, width, height);
-
-		float w2 = width / 2.0f;
-        float h2 = height / 2.0f;
-        mat4 viewport = mat4( vec4(w2,0.0f,0.0f,0.0f),
+		float w2 = framebufferWidth / 2.0f;
+        float h2 = framebufferHeight / 2.0f;
+        mat4 viewportMatrix = mat4( vec4(w2,0.0f,0.0f,0.0f),
                      vec4(0.0f,h2,0.0f,0.0f),
                      vec4(0.0f,0.0f,1.0f,0.0f),
                      vec4(w2+0, h2+0, 0.0f, 1.0f));
 
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-		t = float(glfwGetTime());
-		deltaT = t - tPrev;
-    	if(tPrev == 0.0f) deltaT = 0.0f;
-    	tPrev = t;
-    	
-    	angle += 0.005f;
-		if (angle > glm::two_pi<float>()) angle -= glm::two_pi<float>();
-
-	    cameraPos = vec3(2.0f * cos(angle), 1.5f, 2.0f * sin(angle));
-    	projection = glm::perspective(glm::radians(45.0f), (float)width/height, 0.3f, 100.0f);
-		model = glm::rotate(model, angle, vec3(0.0f, 1.0f, 0.0f));
-		mv = view * model;
-    	mvp = projection * view * model;
-		normalMtx = glm::mat3(glm::transpose(glm::inverse(mv)));
-
-		glUniformMatrix4fv(mvp_location_phong, 1, GL_FALSE, &(mvp)[0][0]);
-		glUniformMatrix4fv(mv_location_phong, 1, GL_FALSE, &(mv)[0][0]);
-		glUniformMatrix4fv(model_location_phong, 1, GL_FALSE, &(model)[0][0]);
-		glUniformMatrix4fv(normal_location_phong, 1, GL_FALSE, &(normalMtx)[0][0]);
-		glUniformMatrix4fv(viewport_location, 1, GL_FALSE, &(viewport)[0][0]);
-
-		glm::mat3 nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
-
-		
-
-		if(usePhongSpec) {
-			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &phongSpecPhong);
-		} else {
-			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &blinnSpecPhong);
-		}
-
-		glBindVertexArray(groundVAO);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-		switch(modelToRender){
-			case 1: 
-				glBindVertexArray(icoVAO);
-				glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
-				break;
-			case 2:
-				glBindVertexArray(cubeVAO);
-				glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
-				break;
-			case 3:
-				glUseProgram(teapotProgram);
-				model = glm::scale(model, vec3(0.25, 0.25, 0.25));
-				model = glm::rotate(model, glm::radians(-90.0f), vec3(1,0,0));
-				mv = view * model;
-				nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
-				mvp = projection * view * model;
-				glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"ModelViewMatrix"), 1, GL_FALSE, &(mv)[0][0]);
-				glUniformMatrix3fv(glGetUniformLocation(teapotProgram,"NormalMatrix"), 1, GL_FALSE, &(nm)[0][0]);
-				glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"MVP"), 1, GL_FALSE, &(mvp)[0][0]);
-				glUniformMatrix4fv(glGetUniformLocation(teapotProgram,"ViewportMatrix"), 1, GL_FALSE, &(viewport)[0][0]);
-
-				glUniform1i(glGetUniformLocation(teapotProgram,"TessLevel"), tessLevel);
-				teapot.render();
-				break;
-			default: break;
-		}
-	    
-    	glBindVertexArray(0);
-
-		showFPS(_window);
+		_renderScene(viewMatrix, projectionMatrix, viewportMatrix);
+		// showFPS(_window);
 
         glfwSwapBuffers(_window);
         glfwPollEvents();
