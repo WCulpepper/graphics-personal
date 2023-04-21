@@ -22,6 +22,7 @@ class OGLEngine {
 public: 
     // Constructor/Destructor
     OGLEngine(int OPENGL_MAJOR, int OPENGL_MINOR, int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_NAME);
+    OGLEngine();
     ~OGLEngine();
 
     void initialize();
@@ -183,5 +184,19 @@ void cursor_pos_callback(GLFWwindow* window, double x, double y);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void error_callback(int error, const char* description);
 void window_resize_callback(GLFWwindow* window, int width, int height);
+
+inline void printOGLInfo() {
+    GLint major, minor;
+    glGetIntegerv(GL_MAJOR_VERSION, &major);
+    glGetIntegerv(GL_MINOR_VERSION, &minor);
+
+	fprintf( stdout, "\n[INFO]: /--------------------------------------------------------\\\n" );
+	fprintf( stdout, "[INFO]: | OpenGL Information                                     |\n" );
+	fprintf( stdout, "[INFO]: |--------------------------------------------------------|\n" );
+	fprintf( stdout, "[INFO]: |   OpenGL Version:  %35s |\n", glGetString(GL_VERSION) );
+	fprintf( stdout, "[INFO]: |   OpenGL Renderer: %35s |\n", glGetString(GL_RENDERER) );
+	fprintf( stdout, "[INFO]: |   OpenGL Vendor:   %35s |\n", glGetString(GL_VENDOR) );
+	fprintf( stdout, "[INFO]: |   Shading Version: %35s |\n", glGetString(GL_SHADING_LANGUAGE_VERSION) );
+}
 
 #endif // OGL_ENGINE_HPP

@@ -12,8 +12,6 @@
 #ifndef OGLENGINE_CAMERA_HPP
 #define OGLENGINE_CAMERA_HPP
 
-#define M_PI 3.14159265
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>

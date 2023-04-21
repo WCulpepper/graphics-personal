@@ -39,9 +39,17 @@ glm::vec2 mousePosition = vec2(-1.0,-1.0);
 // }
 
 OGLEngine::OGLEngine(int OPENGL_MAJOR, int OPENGL_MINOR, int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_NAME) {
+	std::cout << "in constructor\n";
+	DEBUG = true;
 	for(auto& _key : _keys) _key = GL_FALSE;
+
+	_windowWidth = WINDOW_WIDTH;
+	_windowHeight = WINDOW_HEIGHT;
+	
 	_windowTitle = (char*)malloc(sizeof(char)*strlen(WINDOW_NAME));
 	strcpy(_windowTitle, WINDOW_NAME);
+
+	_window = nullptr;
 	_mousePos = glm::vec2(MOUSE_UNINIT, MOUSE_UNINIT);
 	_leftMouseButtonState = GLFW_RELEASE;
 	_selectedCam = 1;
@@ -49,6 +57,10 @@ OGLEngine::OGLEngine(int OPENGL_MAJOR, int OPENGL_MINOR, int WINDOW_WIDTH, int W
 	_errorCode = OPENGL_ENGINE_ERROR_NO_ERROR;
 	_isInitialized = false;
 	_isCleanedUp = false;
+}
+
+OGLEngine::OGLEngine() {
+	std::cout <<"Default dance\n";
 }
 
 OGLEngine::~OGLEngine() {
@@ -97,13 +109,17 @@ void OGLEngine::scrollWheelEventHandler(double offset) {
 }
 
 void OGLEngine::windowResizeHandler(int width, int height) {
-
+	_windowWidth = width;
+	_windowHeight = height;
 }
 
 void OGLEngine::initialize() {
 	if(!_isInitialized) {
+		std::cout << DEBUG << std::endl;
 		_setupGLFW();
 		_setupOGL();
+
+		if (DEBUG) printOGLInfo();
 
 		_setupBuffers();
 		_setupTextures();
