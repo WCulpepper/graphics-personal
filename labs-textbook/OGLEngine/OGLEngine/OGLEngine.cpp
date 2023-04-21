@@ -38,16 +38,18 @@ glm::vec2 mousePosition = vec2(-1.0,-1.0);
 // 	return 0.0f;
 // }
 
-OGLEngine::OGLEngine(int OPENGL_MAJOR, int OPENGL_MINOR, int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_NAME) {
-	std::cout << "in constructor\n";
+OGLEngine::OGLEngine(int majorVersion, int minorVersion, int windowWidth, int windowHeight, const char* windowName) {
+	fprintf( stdout, "\n[INFO]: currently in constructor\n" );
 	DEBUG = true;
 	for(auto& _key : _keys) _key = GL_FALSE;
 
-	_windowWidth = WINDOW_WIDTH;
-	_windowHeight = WINDOW_HEIGHT;
+	_windowWidth = windowWidth;
+	_windowHeight = windowHeight;
+	_majorVersion = majorVersion;
+	_minorVersion = minorVersion;
 	
-	_windowTitle = (char*)malloc(sizeof(char)*strlen(WINDOW_NAME));
-	strcpy(_windowTitle, WINDOW_NAME);
+	_windowTitle = (char*)malloc(sizeof(char)*strlen(windowName));
+	strcpy(_windowTitle, windowName);
 
 	_window = nullptr;
 	_mousePos = glm::vec2(MOUSE_UNINIT, MOUSE_UNINIT);
@@ -60,7 +62,7 @@ OGLEngine::OGLEngine(int OPENGL_MAJOR, int OPENGL_MINOR, int WINDOW_WIDTH, int W
 }
 
 OGLEngine::OGLEngine() {
-	std::cout <<"Default dance\n";
+	std::cout <<"Default constructor\n";
 }
 
 OGLEngine::~OGLEngine() {
@@ -119,7 +121,7 @@ void OGLEngine::initialize() {
 		_setupGLFW();
 		_setupOGL();
 
-		if (DEBUG) printOGLInfo();
+		//if (DEBUG) printOGLInfo();
 
 		_setupBuffers();
 		_setupTextures();
@@ -149,6 +151,7 @@ void OGLEngine::_setupGLFW() {
 		glfwWindowHint( GLFW_RESIZABLE, _windowResizable );		                // set if our window should be able to be resized
 		
 		// create a window for a given size, with a given title
+		fprintf(stdout, "[INFO]: Creating window...\n");
 		_window = glfwCreateWindow( _windowWidth, _windowHeight, _windowTitle, nullptr, nullptr );
 		if( !_window ) {						                                // if the window could not be created, NULL is returned
 			fprintf( stderr, "[ERROR]: GLFW Window could not be created\n" );
@@ -171,6 +174,8 @@ void OGLEngine::_setupGLFW() {
 }
 
 void OGLEngine::_setupOGL() {
+	fprintf(stdout, "[INFO]: Setting up OpenGL...\n");
+	gladLoadGL();
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glEnable(GL_BLEND);
@@ -279,7 +284,7 @@ void OGLEngine::_setupShaders()
 }
 
 void OGLEngine::_setupBuffers() {
-
+	fprintf(stdout, "[INFO]: Setting up buffers...\n");
 	GLuint ico_vertpos_buffer;
 	GLuint ico_normal_buffer;
     GLuint ico_index_buffer;
@@ -414,6 +419,8 @@ void OGLEngine::_setupBuffers() {
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, noiseTex);
+
+	objects.teapot = new TeapotPatch();
 
 	glBindVertexArray(0);
 }
@@ -581,8 +588,6 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 	model = mat4(1.0f);
 	glUseProgram(_wireframeProgram);
 
-	
-
 	model = glm::rotate(model, _cameraAngle, vec3(0.0f, 1.0f, 0.0f));
 	mv = viewMtx * model;
 	mvp = projMtx * viewMtx * model;
@@ -624,7 +629,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 			glUniformMatrix4fv(_tessUniformLocations.viewportMtx, 1, GL_FALSE, &(viewportMtx)[0][0]);
 
 			glUniform1i(_tessUniformLocations.tessLevel, tessLevel);
-			objects.teapot.render();
+			objects.teapot->render();
 			break;
 		default: break;
 	}
@@ -684,7 +689,7 @@ void OGLEngine::run()
                      vec4(0.0f,h2,0.0f,0.0f),
                      vec4(0.0f,0.0f,1.0f,0.0f),
                      vec4(w2+0, h2+0, 0.0f, 1.0f));
-
+		_updateScene();
 		_renderScene(viewMatrix, projectionMatrix, viewportMatrix);
 		// showFPS(_window);
 

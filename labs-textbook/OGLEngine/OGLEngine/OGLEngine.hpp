@@ -21,7 +21,7 @@
 class OGLEngine {
 public: 
     // Constructor/Destructor
-    OGLEngine(int OPENGL_MAJOR, int OPENGL_MINOR, int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_NAME);
+    OGLEngine(int majorVersion, int minorVersion, int windowWidth, int windowHeight, const char* windowName);
     OGLEngine();
     ~OGLEngine();
 
@@ -38,7 +38,7 @@ public:
 
     static constexpr GLfloat MOUSE_UNINIT = -9999.0f;
 
-    void setCurrentWindowSize(const int WINDOW_WIDTH, const int WINDOW_HEIGHT) { _windowWidth = WINDOW_WIDTH; _windowHeight = WINDOW_HEIGHT; }
+    void setCurrentWindowSize(const int windowWidth, const int windowHeight) { _windowWidth = windowWidth; _windowHeight = windowHeight; }
     /// \desc Return the height of the window
     int getWindowHeight() const noexcept { return _windowHeight; }
     /// \desc Return the width of the window
@@ -166,7 +166,7 @@ private:
     } _tessUniformLocations;
 
     struct SceneObjects {
-        TeapotPatch teapot;
+        TeapotPatch* teapot;
     } objects;
 
 };
@@ -175,6 +175,7 @@ void readShader(const char* fname, char *source);
 unsigned int loadShader(const char *source, unsigned int mode);
 void showFPS(GLFWwindow* window);
 
+int storeTex( GLubyte * data, int w, int h );
 int generate2DTex(float baseFreq = 4.0f, float persistence = 0.5f, int w = 128, int h = 128, bool periodic = false);
 int generatePeriodic2DTex(float baseFreq = 4.0f, float persist = 0.5f, int w = 128, int h = 128);
 
@@ -197,6 +198,7 @@ inline void printOGLInfo() {
 	fprintf( stdout, "[INFO]: |   OpenGL Renderer: %35s |\n", glGetString(GL_RENDERER) );
 	fprintf( stdout, "[INFO]: |   OpenGL Vendor:   %35s |\n", glGetString(GL_VENDOR) );
 	fprintf( stdout, "[INFO]: |   Shading Version: %35s |\n", glGetString(GL_SHADING_LANGUAGE_VERSION) );
+    fprintf( stdout, "\n[INFO]: /--------------------------------------------------------\\\n" );
 }
 
 #endif // OGL_ENGINE_HPP
