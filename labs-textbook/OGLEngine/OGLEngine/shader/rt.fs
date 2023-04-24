@@ -15,6 +15,11 @@ uniform float sphere2Reflect;
 in vec2 texCoord;
 out vec4 fragColor;
 
+// layout(std430, binding=0) buffer Triangle {
+//     vec3[][] points;
+//     int index;
+// }
+
 vec3 rayo, rayd;
 void generateRay() {
     int d; // distance of the image plane from the camera
