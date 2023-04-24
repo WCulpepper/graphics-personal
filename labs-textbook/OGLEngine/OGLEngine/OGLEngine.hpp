@@ -117,6 +117,7 @@ private:
 
     GLuint _wireframeProgram;
     GLuint _teapotProgram;
+    GLuint _rtProgram;
 
     static constexpr int NUM_VAOS = 4;
     enum VAO_ID {
@@ -165,9 +166,28 @@ private:
         GLint kd;
     } _tessUniformLocations;
 
+    struct RTUniformLocations {
+        GLint projectionMtx;
+        GLint viewMatrix;
+    } _rtUniformLocations;
+
     struct SceneObjects {
         TeapotPatch* teapot;
     } objects;
+
+    struct Vertex {
+        GLfloat x, y, z, normX, normY, normZ, texU, texV;
+    };
+
+    struct Texture {
+        GLuint id;
+        const char* type;
+    };
+
+    class Mesh {
+    public:
+        Mesh(Vertex &vertices, GLint &indices);
+    };
 
 };
 

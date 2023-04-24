@@ -188,8 +188,12 @@ void OGLEngine::_setupShaders()
 	char *vsSource_wireframe, *fsSource_wireframe, *gsSource_wireframe, 
 	*vsSource_teapot, *fsSource_teapot, *gsSource_teapot, *tcsSource_teapot, *tesSource_teapot;
 
+	char *vsSource_rt, *fsSource_rt;
+
 	GLuint vsWireframe, gsWireframe, fsWireframe, 
 	vsTeapot, gsTeapot, fsTeapot, tcsTeapot, tesTeapot;
+
+	GLuint vsRT, fsRT;
 
 	vsSource_wireframe = (char *)malloc(sizeof(char)*20000);
 	gsSource_wireframe = (char *)malloc(sizeof(char)*20000);
@@ -201,6 +205,8 @@ void OGLEngine::_setupShaders()
 	tcsSource_teapot = (char *)malloc(sizeof(char)*20000);
 	tesSource_teapot = (char *)malloc(sizeof(char)*20000);
 
+	fsSource_rt = (char *)malloc(sizeof(char)*20000);
+	vsSource_rt = (char *)malloc(sizeof(char)*20000);
 
 	vsSource_wireframe[0]='\0';
 	gsSource_wireframe[0]='\0';
@@ -212,8 +218,12 @@ void OGLEngine::_setupShaders()
 	tcsSource_teapot[0]='\0';
 	tesSource_teapot[0]='\0';
 
+	vsSource_rt[0]='\0';
+	fsSource_rt[0]='\0';
+
 	_wireframeProgram = glCreateProgram();
 	_teapotProgram = glCreateProgram();
+	_rtProgram = glCreateProgram();
 
 	readShader("shader/wireframe_vertex.vs",vsSource_wireframe);
 	readShader("shader/wireframe_fragment.fs",fsSource_wireframe);
@@ -225,6 +235,9 @@ void OGLEngine::_setupShaders()
 	readShader("shader/teapot.tcs",tcsSource_teapot);
 	readShader("shader/teapot.tes",tesSource_teapot);
 
+	readShader("shader/rt.vs", vsSource_rt);
+	readShader("shader/rt.fs", fsSource_rt);
+
 	vsWireframe = loadShader(vsSource_wireframe,GL_VERTEX_SHADER);
 	fsWireframe = loadShader(fsSource_wireframe,GL_FRAGMENT_SHADER);
 	gsWireframe = loadShader(gsSource_wireframe,GL_GEOMETRY_SHADER);
@@ -234,6 +247,9 @@ void OGLEngine::_setupShaders()
 	gsTeapot = loadShader(gsSource_teapot,GL_GEOMETRY_SHADER);
 	tcsTeapot = loadShader(tcsSource_teapot, GL_TESS_CONTROL_SHADER);
 	tesTeapot = loadShader(tesSource_teapot, GL_TESS_EVALUATION_SHADER);
+
+	vsRT = loadShader(vsSource_rt, GL_VERTEX_SHADER);
+	fsRT = loadShader(fsSource_rt, GL_FRAGMENT_SHADER);
 
 	glAttachShader(_wireframeProgram,vsWireframe);
 	glAttachShader(_wireframeProgram,fsWireframe);
@@ -245,8 +261,12 @@ void OGLEngine::_setupShaders()
 	glAttachShader(_teapotProgram,tcsTeapot);
 	glAttachShader(_teapotProgram,tesTeapot);
 
+	glAttachShader(_rtProgram, vsRT);
+	glAttachShader(_rtProgram, fsRT);
+
 	glLinkProgram(_wireframeProgram);
 	glLinkProgram(_teapotProgram); 
+	glLinkProgram(_rtProgram);
 
 	glUseProgram(_wireframeProgram);
 
@@ -302,14 +322,42 @@ void OGLEngine::_setupBuffers() {
 		{IZ, IX, 0.0}, {-IZ, IX, 0.0}, {IZ, -IX, 0.0}, {-IZ, -IX, 0.0} 
 	};
 
+	Vertex icoVerts[12] = {
+		{-IX, 0.0, IZ, -IX, 0.0, IZ, 0.0, 0.0}, 
+		{IX, 0.0, IZ, IX, 0.0, IZ, 0.0, 0.0}, 
+		{-IX, 0.0, -IZ, -IX, 0.0, -IZ, 0.0, 0.0}, 
+		{IX, 0.0, -IZ, IX, 0.0, -IZ, 0.0, 0.0}, 
+		{0.0, IZ, IX, 0.0, IZ, IX, 0.0, 0.0}, 
+		{0.0, IZ, -IX, 0.0, IZ, -IX, 0.0, 0.0}, 
+		{0.0, -IZ, IX, 0.0, -IZ, IX, 0.0, 0.0}, 
+		{0.0, -IZ, -IX, 0.0, -IZ, -IX, 0.0, 0.0}, 
+		{IZ, IX, 0.0, IZ, IX, 0.0, 0.0, 0.0}, 
+		{-IZ, IX, 0.0, -IZ, IX, 0.0, 0.0, 0.0}, 
+		{IZ, -IX, 0.0, IZ, -IX, 0.0, 0.0, 0.0}, 
+		{-IZ, -IX, 0.0, -IZ, -IX, 0.0, 0.0, 0.0}
+	};
+
+	
+
 	// These are the 20 faces.  Each of the three entries for each 
 	// vertex gives the 3 vertices that make the face.
+	// static GLint tindices[20][3] = { 
+	// 	{0,4,1}, {0,9,4}, {9,5,4}, {4,5,8}, {4,8,1},    
+	// 	{8,10,1}, {8,3,10}, {5,3,8}, {5,2,3}, {2,7,3},    
+	// 	{7,10,3}, {7,6,10}, {7,11,6}, {11,0,6}, {0,1,6}, 
+	// 	{6,1,10}, {9,0,11}, {9,11,2}, {9,2,5}, {7,2,11} 
+	// };
+
 	static GLint tindices[20][3] = { 
 		{0,4,1}, {0,9,4}, {9,5,4}, {4,5,8}, {4,8,1},    
 		{8,10,1}, {8,3,10}, {5,3,8}, {5,2,3}, {2,7,3},    
 		{7,10,3}, {7,6,10}, {7,11,6}, {11,0,6}, {0,1,6}, 
 		{6,1,10}, {9,0,11}, {9,11,2}, {9,2,5}, {7,2,11} 
 	};
+
+	Texture t = {0, "noise"};
+
+	// Mesh icosahedron = Mesh(*icoVerts, **tindices);
 
 	static GLfloat vdata_cube[] = {
             -0.5, -0.5, -0.5,
@@ -330,7 +378,7 @@ void OGLEngine::_setupBuffers() {
             0, 4, 3, 4, 7, 3 };
 
 	
-	static GLfloat vdata_base[4][3] = {
+	GLfloat vdata_base[4][3] = {
 		{-2.0,-1.0,-2.0}, {-2.0,-1.0,2.0}, {2.0,-1.0,-2.0}, {2.0,-1.0,2.0}
 	};
 
@@ -338,33 +386,46 @@ void OGLEngine::_setupBuffers() {
 		{0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}
 	};
 
+	// Mesh ico = Mesh(vdata_ico, tindices);
+
 
 	
 	// ICOSAHEDRON BUFFERS
-    glGenBuffers(1, &ico_vertpos_buffer);
+	GLuint icoVBODs[2];
+	glGenBuffers(2, icoVBODs);
+    // glGenBuffers(1, &ico_vertpos_buffer);
     glGenBuffers(1, &ico_index_buffer);
-	glGenBuffers(1, &ico_normal_buffer);
+	// glGenBuffers(1, &ico_normal_buffer);
 
 	glGenVertexArrays(1, &icoVAO);
 	glBindVertexArray(icoVAO);
-	
-    glBindBuffer(GL_ARRAY_BUFFER, ico_vertpos_buffer);
-    glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(vdata_ico[0][0]), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, ico_normal_buffer);
-	glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(vdata_ico[0][0]), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, icoVBODs[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(icoVerts), icoVerts, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0 );
+
+	glEnableVertexAttribArray(1);
+    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3*sizeof(GLfloat)) );
+	
+    // glBindBuffer(GL_ARRAY_BUFFER, ico_vertpos_buffer);
+    // glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(vdata_ico[0][0]), GL_STATIC_DRAW);
+
+	// glBindBuffer(GL_ARRAY_BUFFER, ico_normal_buffer);
+	// glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(vdata_ico[0][0]), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ico_index_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 60*sizeof(int), (void *)&(tindices[0][0]), GL_STATIC_DRAW);
 
 	// ICOSAHEDRON ATTRIBUTE ASSIGNMENT
-    glBindBuffer(GL_ARRAY_BUFFER, ico_vertpos_buffer);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+    // glBindBuffer(GL_ARRAY_BUFFER, ico_vertpos_buffer);
+    // glEnableVertexAttribArray(0);
+    // glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
-	glBindBuffer(GL_ARRAY_BUFFER, ico_normal_buffer);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+	// glBindBuffer(GL_ARRAY_BUFFER, ico_normal_buffer);
+    // glEnableVertexAttribArray(1);
+    // glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	// CUBE BUFFERS
 	glGenBuffers(1, &cube_vertpos_buffer);
@@ -586,7 +647,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
     
 
 	model = mat4(1.0f);
-	glUseProgram(_wireframeProgram);
+	
 
 	model = glm::rotate(model, _cameraAngle, vec3(0.0f, 1.0f, 0.0f));
 	mv = viewMtx * model;
@@ -634,7 +695,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 		default: break;
 	}
 
-	
+	glUseProgram(_wireframeProgram);
 
 	glBindVertexArray(groundVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
