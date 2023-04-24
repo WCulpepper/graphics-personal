@@ -17,6 +17,7 @@
 #include "ArcballCam.hpp"
 #include "FreeCam.hpp"
 #include "teapotpatch.h"
+#include "cube.h"
 
 class OGLEngine {
 public: 
@@ -173,6 +174,7 @@ private:
 
     struct SceneObjects {
         TeapotPatch* teapot;
+        Cube* cube;
     } objects;
 
     struct Vertex {

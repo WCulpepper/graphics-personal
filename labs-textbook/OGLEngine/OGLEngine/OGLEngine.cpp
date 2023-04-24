@@ -482,6 +482,7 @@ void OGLEngine::_setupBuffers() {
 	glBindTexture(GL_TEXTURE_2D, noiseTex);
 
 	objects.teapot = new TeapotPatch();
+	objects.cube = new Cube();
 
 	glBindVertexArray(0);
 }
@@ -675,6 +676,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 		case 2:
 			glBindVertexArray(cubeVAO);
 			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
+			// objects.cube->render();
 			break;
 		case 3:
 			glUseProgram(_teapotProgram);

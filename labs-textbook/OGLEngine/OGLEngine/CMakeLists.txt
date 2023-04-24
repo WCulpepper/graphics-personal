@@ -4,6 +4,9 @@ set( ENGINE_SOURCES
 	OGLEngine.cpp
 	OGLEngine.hpp
 	main.cpp
+	objects.hpp
+	ArcballCam.hpp
+	FreeCam.hpp
 	 )
 
 add_executable( ${target} ${ENGINE_SOURCES} )
