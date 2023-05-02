@@ -307,11 +307,19 @@ void OGLEngine::_setupBuffers() {
 	GLuint normal_base_buffer;
 
 	// non-interpolated vertex data
-	static GLfloat vdata_ico[12][3] = {    
-		{-IX, 0.0, IZ}, {IX, 0.0, IZ}, {-IX, 0.0, -IZ}, {IX, 0.0, -IZ},    
-		{0.0, IZ, IX}, {0.0, IZ, -IX}, {0.0, -IZ, IX}, {0.0, -IZ, -IX},    
-		{IZ, IX, 0.0}, {-IZ, IX, 0.0}, {IZ, -IX, 0.0}, {-IZ, -IX, 0.0} 
-	};
+	
+
+	struct IcoSSBOData {
+		vec3 vdata_ico[12] = { vec3(-IX, 0.0, IZ), vec3(IX, 0.0, IZ), vec3(-IX, 0.0, -IZ), vec3(IX, 0.0, -IZ),    
+							vec3(0.0, IZ, IX), vec3(0.0, IZ, -IX), vec3(0.0, -IZ, IX), vec3(0.0, -IZ, -IX),    
+							vec3(IZ, IX, 0.0), vec3(-IZ, IX, 0.0), vec3(IZ, -IX, 0.0), vec3(-IZ, -IX, 0.0) 
+		};
+
+		vec3 indices[20] = { vec3(0,4,1), vec3(0,9,4), vec3(9,5,4), vec3(4,5,8), vec3(4,8,1),    
+							vec3(8,10,1), vec3(8,3,10), vec3(5,3,8), vec3(5,2,3), vec3(2,7,3),    
+							vec3(7,10,3), vec3(7,6,10), vec3(7,11,6), vec3(11,0,6), vec3(0,1,6), 
+							vec3(6,1,10), vec3(9,0,11), vec3(9,11,2), vec3(9,2,5), vec3(7,2,11)  };
+	} icoSSBOData;
 
 	// These are the 12 vertices for the icosahedron, interpolated with texture coordinates
 	Vertex icoVerts[12] = {
@@ -394,6 +402,9 @@ void OGLEngine::_setupBuffers() {
 	GLuint icoSSBO;
 	glGenBuffers(1, &icoSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, icoSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(icoSSBOData), &icoSSBOData, GL_DYNAMIC_COPY);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, icoSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 
 	// CUBE BUFFERS

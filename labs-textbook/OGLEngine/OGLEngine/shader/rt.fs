@@ -9,7 +9,7 @@ out vec4 fragColor;
 
 layout(std430, binding=3) buffer Icosahedron {
     vec3[12] vertices;
-    int[20][3] indices;
+    vec3[20] indices;
 }
 
 vec3 rayo, rayd;
@@ -239,6 +239,12 @@ void main(void)
     float tmin = 10001;
     vec3 mat;
     generateRay();
+
+    for(int i = 0; i < 20; i++) {
+        t1 = intersectTriangle(rayo, rayd, Icosahedron.vertices[Icosahedron.indices[i].x], Icosahedron.vertices[Icosahedron.indices[i].y], Icosahedron.vertices[Icosahedron.indices[i].z]);
+        t2 = intersectTriangle(rayo, rayd, Icosahedron.vertices[Icosahedron.indices[i].x], Icosahedron.vertices[Icosahedron.indices[i].y], Icosahedron.vertices[Icosahedron.indices[i].z]);
+        t3 = intersectXZPlane(rayo, rayd);
+    }
     t1 = intersectSphere(rayo, rayd, sphere1Pos,sphere1Radius);
     t2 = intersectSphere(rayo, rayd, sphere2Pos,sphere2Radius);
     t3 = intersectXZPlane(rayo, rayd);
