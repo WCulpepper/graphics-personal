@@ -8,6 +8,7 @@ set(ingredients_SOURCES
         objmesh.cpp
         glslprogram.cpp
         cube.cpp
+        icosahedron.cpp
         plane.cpp
         sphere.cpp
         cookbookogl.h

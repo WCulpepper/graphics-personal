@@ -1,24 +1,16 @@
-#version 410
+#version 460
 
 uniform vec3 camPos;
 uniform vec3 camGaze;
 uniform vec3 camUp;
-uniform vec3 sphere1Pos;
-uniform float sphere1Radius;
-uniform vec3 sphere1Mat;
-uniform float sphere1Reflect;
-uniform vec3 sphere2Pos;
-uniform float sphere2Radius;
-uniform vec3 sphere2Mat;
-uniform float sphere2Reflect;
 
 in vec2 texCoord;
 out vec4 fragColor;
 
-// layout(std430, binding=0) buffer Triangle {
-//     vec3[][] points;
-//     int index;
-// }
+layout(std430, binding=3) buffer Icosahedron {
+    vec3[12] vertices;
+    int[20][3] indices;
+}
 
 vec3 rayo, rayd;
 void generateRay() {
@@ -33,6 +25,74 @@ void generateRay() {
     pixelCenter = q + (texCoord.x)*camRight + (texCoord.y)*camUp;
     rayo = camPos; // ray origin
     rayd = pixelCenter-camPos; // ray direction
+}
+
+// intersects a triangle, assuming a counter-clockwise winding of the points.
+//    B
+// C /\ A
+
+
+// float intersectTriangle(vec3 rayo, vec3 rayd, vec3 p1, vec3 p2, vec3 p3) {
+//     vec3 sideBA = p2 - p1;
+//     vec3 sideCA = p3 - p1;
+//     vec3 pointToTri = rayo - p1;
+
+//     float d = 0;
+// }
+
+float intersectTriangle(vec3 rayo, vec3 rayd, vec3 p1, vec3 p2, vec3 p3) {
+    double  a,b,c,d,e,f,g,h,i,j,k,l;
+	double beta,gamma,t;
+	
+	double eimhf,gfmdi,dhmeg,akmjb,jcmal,blmkc;
+
+	double M;
+	
+	double dd;
+	
+	vec3 ma,mb,mc;
+	ma = p1; // point 1
+	mb = p2; // point 2
+	mc = p3; // point 3
+
+	a = ma.x-mb.x; // side 1, p1->p2
+	b = ma.y-mb.y;
+	c = ma.z-mb.z;
+
+	d = ma.x-mc.x; // side 2, p1->p3
+	e = ma.y-mc.y;
+	f = ma.z-mc.z;
+	
+	g = r.b.x; // don't know what this is, I assume it's rayd
+	h = r.b.y;
+	i = r.b.z;
+	
+	j = ma.x-r.a.x; // 
+	k = ma.y-r.a.y;
+	l = ma.z-r.a.z;
+	
+	eimhf = e*i-h*f;
+	gfmdi = g*f-d*i;
+	dhmeg = d*h-e*g;
+	akmjb = a*k-j*b;
+	jcmal = j*c-a*l;
+	blmkc = b*l-k*c;
+
+	M = a*eimhf+b*gfmdi+c*dhmeg;
+	
+	t = -(f*akmjb+e*jcmal+d*blmkc)/M;
+	
+	if (t<0) return -1;
+	
+	gamma = (i*akmjb+h*jcmal+g*blmkc)/M;
+	
+	if (gamma<0 || gamma>1) return -1;
+	
+	beta = (j*eimhf+k*gfmdi+l*dhmeg)/M;
+	
+	if (beta<0 || beta>(1-gamma)) return -1;
+	
+	return t;
 }
 
 float intersectSphere(vec3 rayo, vec3 rayd, vec3 center, float r)

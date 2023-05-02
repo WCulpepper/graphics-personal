@@ -18,6 +18,7 @@
 #include "FreeCam.hpp"
 #include "teapotpatch.h"
 #include "cube.h"
+#include "icosahedron.h"
 
 class OGLEngine {
 public: 
@@ -175,6 +176,7 @@ private:
     struct SceneObjects {
         TeapotPatch* teapot;
         Cube* cube;
+        Icosahedron* ico;
     } objects;
 
     struct Vertex {
@@ -184,11 +186,6 @@ private:
     struct Texture {
         GLuint id;
         const char* type;
-    };
-
-    class Mesh {
-    public:
-        Mesh(Vertex &vertices, GLint &indices);
     };
 
 };

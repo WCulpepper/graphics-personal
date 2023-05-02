@@ -1,9 +1,10 @@
-
 #include "OGLEngine.hpp"
 
 // the X and Z values are for drawing an icosahedron
 #define IX 0.525731112119133606 
 #define IZ 0.850650808352039932
+
+#define M_PI 3.14159265358979323846
 
 GLuint icoVAO;
 GLuint cubeVAO;
@@ -26,17 +27,6 @@ using glm::vec4;
 using glm::mat4;
 using glm::vec2;
 using namespace glm;
-
-GLint leftMouseButtonState;
-glm::vec2 mousePosition = vec2(-1.0,-1.0);
-
-// float perlin(float x, float y, float z) {
-// 	float x_cube = x % 1.0f;
-// 	float y_cube = y % 1.0f;
-// 	float z_cube = z % 1.0f;
-
-// 	return 0.0f;
-// }
 
 OGLEngine::OGLEngine(int majorVersion, int minorVersion, int windowWidth, int windowHeight, const char* windowName) {
 	fprintf( stdout, "\n[INFO]: currently in constructor\n" );
@@ -87,7 +77,7 @@ void OGLEngine::keyEventHandler(GLint key, GLint action) {
 
 void OGLEngine::mbEventHandler(GLint button, GLint action) {
 	if(button == GLFW_MOUSE_BUTTON_LEFT) {
-		leftMouseButtonState = action;
+		_leftMouseButtonState = action;
 	} 
 }
 
@@ -98,7 +88,7 @@ void OGLEngine::cursorPosEventHandler(glm::vec2 currMousePosition) {
 
 	if(_leftMouseButtonState == GLFW_PRESS) {
 		_arcballCam->rotate((currMousePosition.x - _mousePos.x) * 0.005f,
-                            (_mousePos.y - currMousePosition.y) * 0.005f );
+                            (currMousePosition.y - _mousePos.y) * 0.005f );
 	}
 
 	_mousePos = currMousePosition;
@@ -106,7 +96,7 @@ void OGLEngine::cursorPosEventHandler(glm::vec2 currMousePosition) {
 
 void OGLEngine::scrollWheelEventHandler(double offset) {
 	if(abs(offset) > 0) {
-		// something goes here
+		_arcballCam->moveForward(offset);
 	}
 }
 
@@ -315,13 +305,15 @@ void OGLEngine::_setupBuffers() {
 
 	GLuint vertpos_base_buffer;
 	GLuint normal_base_buffer;
-	// These are the 12 vertices for the icosahedron
+
+	// non-interpolated vertex data
 	static GLfloat vdata_ico[12][3] = {    
 		{-IX, 0.0, IZ}, {IX, 0.0, IZ}, {-IX, 0.0, -IZ}, {IX, 0.0, -IZ},    
 		{0.0, IZ, IX}, {0.0, IZ, -IX}, {0.0, -IZ, IX}, {0.0, -IZ, -IX},    
 		{IZ, IX, 0.0}, {-IZ, IX, 0.0}, {IZ, -IX, 0.0}, {-IZ, -IX, 0.0} 
 	};
 
+	// These are the 12 vertices for the icosahedron, interpolated with texture coordinates
 	Vertex icoVerts[12] = {
 		{-IX, 0.0, IZ, -IX, 0.0, IZ, 0.0, 0.0}, 
 		{IX, 0.0, IZ, IX, 0.0, IZ, 0.0, 0.0}, 
@@ -337,17 +329,8 @@ void OGLEngine::_setupBuffers() {
 		{-IZ, -IX, 0.0, -IZ, -IX, 0.0, 0.0, 0.0}
 	};
 
-	
-
 	// These are the 20 faces.  Each of the three entries for each 
 	// vertex gives the 3 vertices that make the face.
-	// static GLint tindices[20][3] = { 
-	// 	{0,4,1}, {0,9,4}, {9,5,4}, {4,5,8}, {4,8,1},    
-	// 	{8,10,1}, {8,3,10}, {5,3,8}, {5,2,3}, {2,7,3},    
-	// 	{7,10,3}, {7,6,10}, {7,11,6}, {11,0,6}, {0,1,6}, 
-	// 	{6,1,10}, {9,0,11}, {9,11,2}, {9,2,5}, {7,2,11} 
-	// };
-
 	static GLint tindices[20][3] = { 
 		{0,4,1}, {0,9,4}, {9,5,4}, {4,5,8}, {4,8,1},    
 		{8,10,1}, {8,3,10}, {5,3,8}, {5,2,3}, {2,7,3},    
@@ -385,10 +368,6 @@ void OGLEngine::_setupBuffers() {
 	static GLfloat normaldata_base[4][3] {
 		{0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}
 	};
-
-	// Mesh ico = Mesh(vdata_ico, tindices);
-
-
 	
 	// ICOSAHEDRON BUFFERS
 	GLuint icoVBODs[2];
@@ -408,24 +387,14 @@ void OGLEngine::_setupBuffers() {
 
 	glEnableVertexAttribArray(1);
     glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3*sizeof(GLfloat)) );
-	
-    // glBindBuffer(GL_ARRAY_BUFFER, ico_vertpos_buffer);
-    // glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(vdata_ico[0][0]), GL_STATIC_DRAW);
-
-	// glBindBuffer(GL_ARRAY_BUFFER, ico_normal_buffer);
-	// glBufferData(GL_ARRAY_BUFFER, 36*sizeof(float), (void *)&(vdata_ico[0][0]), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ico_index_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 60*sizeof(int), (void *)&(tindices[0][0]), GL_STATIC_DRAW);
 
-	// ICOSAHEDRON ATTRIBUTE ASSIGNMENT
-    // glBindBuffer(GL_ARRAY_BUFFER, ico_vertpos_buffer);
-    // glEnableVertexAttribArray(0);
-    // glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+	GLuint icoSSBO;
+	glGenBuffers(1, &icoSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, icoSSBO);
 
-	// glBindBuffer(GL_ARRAY_BUFFER, ico_normal_buffer);
-    // glEnableVertexAttribArray(1);
-    // glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 
 	// CUBE BUFFERS
 	glGenBuffers(1, &cube_vertpos_buffer);
@@ -483,6 +452,7 @@ void OGLEngine::_setupBuffers() {
 
 	objects.teapot = new TeapotPatch();
 	objects.cube = new Cube();
+	objects.ico = new Icosahedron();
 
 	glBindVertexArray(0);
 }
@@ -672,6 +642,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 		case 1: 
 			glBindVertexArray(icoVAO);
 			glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
+			// objects.ico->render();
 			break;
 		case 2:
 			glBindVertexArray(cubeVAO);
@@ -712,10 +683,10 @@ void OGLEngine::_updateScene() {
 	if(_tPrev == 0.0f) _deltaT = 0.0f;
 	_tPrev = t;
 	
-	_cameraAngle += 0.005f;
-	if (_cameraAngle > glm::two_pi<float>()) _cameraAngle -= glm::two_pi<float>();
+	//_cameraAngle += 0.005f;
+	//if (_cameraAngle > glm::two_pi<float>()) _cameraAngle -= glm::two_pi<float>();
 
-	_cameraPos = vec3(2.0f * cos(_cameraAngle), 1.5f, 2.0f * sin(_cameraAngle));
+	//_cameraPos = vec3(2.0f * cos(_cameraAngle), 1.5f, 2.0f * sin(_cameraAngle));
 }
 
 void OGLEngine::run()
@@ -742,7 +713,7 @@ void OGLEngine::run()
         // use a perspective projection that ranges
         // with a FOV of 45 degrees, for our current aspect ratio, and Z ranges from [0.001, 1000].
         projectionMatrix = glm::perspective( 45.0f, (GLfloat) framebufferWidth / (GLfloat) framebufferHeight, 0.001f, 1000.0f );
-		
+		_cameraPos = _arcballCam->getPosition();
 		glUniform3fv(_wfUniformLocations.cameraPos, 1, &(_cameraPos)[0]);
 		viewMatrix = _arcballCam->getViewMatrix();
 
@@ -775,13 +746,6 @@ void OGLEngine::shutdown() {
 void OGLEngine::_cleanupShaders() {
 	
 }
-
-/*
-GLuint icoVAO;
-GLuint cubeVAO;
-GLuint teapotVAO;
-GLuint groundVAO;
-*/
 
 void OGLEngine::_cleanupBuffers() {
 	glDeleteVertexArrays(1, &icoVAO);

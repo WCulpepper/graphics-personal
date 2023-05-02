@@ -7,6 +7,7 @@ set( ENGINE_SOURCES
 	objects.hpp
 	ArcballCam.hpp
 	FreeCam.hpp
+	Camera.hpp
 	 )
 
 add_executable( ${target} ${ENGINE_SOURCES} )
