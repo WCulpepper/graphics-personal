@@ -170,7 +170,10 @@ private:
 
     struct RTUniformLocations {
         GLint projectionMtx;
-        GLint viewMatrix;
+        GLint viewMtx;
+        GLint cameraPos;
+        GLint cameraUp;
+        GLint cameraGaze;
     } _rtUniformLocations;
 
     struct SceneObjects {

@@ -258,7 +258,7 @@ void OGLEngine::_setupShaders()
 	glLinkProgram(_teapotProgram); 
 	glLinkProgram(_rtProgram);
 
-	glUseProgram(_wireframeProgram);
+	glUseProgram(_rtProgram);
 
 	_wfUniformLocations.mvpMtx = glGetUniformLocation(_wireframeProgram,"MVP");
 	_wfUniformLocations.mvMtx = glGetUniformLocation(_wireframeProgram, "MV");
@@ -283,6 +283,12 @@ void OGLEngine::_setupShaders()
 	_tessUniformLocations.lightIntensity = glGetUniformLocation(_teapotProgram,"LightIntensity");
 	_tessUniformLocations.lightPos = glGetUniformLocation(_teapotProgram,"LightPosition");
 	_tessUniformLocations.kd = glGetUniformLocation(_teapotProgram,"Kd");
+
+	_rtUniformLocations.projectionMtx = glGetUniformLocation(_rtProgram, "projectionMtx");
+	_rtUniformLocations.viewMtx = glGetUniformLocation(_rtProgram, "viewMtx");
+	_rtUniformLocations.cameraPos = glGetUniformLocation(_rtProgram, "camPos");
+	_rtUniformLocations.cameraUp = glGetUniformLocation(_rtProgram, "camUp");
+	_rtUniformLocations.cameraGaze = glGetUniformLocation(_rtProgram, "camGaze");	
 
 	glUniform4f(_wfUniformLocations.lineColor, 1.0f,1.0f,1.0f,1.0f);
 	glUniform1f(_wfUniformLocations.lineWidth, 0.8f);
@@ -617,10 +623,13 @@ void showFPS(GLFWwindow* window) {
 }
 
 void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx) {
-	if(!_wireframeProgram || !_teapotProgram) {
+	if(!_wireframeProgram || !_teapotProgram || !_rtProgram) {
 		std::cout << "Failed to load shader programs!\n"; 
 		return;
 	}
+
+	glUniformMatrix4fv(_rtUniformLocations.projectionMtx, 1, GL_FALSE, &(projMtx)[0][0]);
+	glUniformMatrix4fv(_rtUniformLocations.viewMtx, 1, GL_FALSE, &(viewMtx)[0][0]);
 
 	glm::mat4 model, mv, mvp;
 	glm::mat3 normalMtx;
@@ -679,7 +688,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 		default: break;
 	}
 
-	glUseProgram(_wireframeProgram);
+	glUseProgram(_rtProgram);
 
 	glBindVertexArray(groundVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -693,11 +702,14 @@ void OGLEngine::_updateScene() {
 	_deltaT = t - _tPrev;
 	if(_tPrev == 0.0f) _deltaT = 0.0f;
 	_tPrev = t;
-	
-	//_cameraAngle += 0.005f;
-	//if (_cameraAngle > glm::two_pi<float>()) _cameraAngle -= glm::two_pi<float>();
 
-	//_cameraPos = vec3(2.0f * cos(_cameraAngle), 1.5f, 2.0f * sin(_cameraAngle));
+	vec3 camUp = _arcballCam->getUpVector();
+	vec3 camPos = _arcballCam->getPosition();
+	vec3 camGaze = vec3(0,0,1);
+	
+	glUniform3fv(_rtUniformLocations.cameraPos, 1,  &(camPos)[0]);
+	glUniform3fv(_rtUniformLocations.cameraUp, 1,  &(camUp)[0]);
+	glUniform3fv(_rtUniformLocations.cameraGaze, 1,  &(camGaze)[0]);
 }
 
 void OGLEngine::run()

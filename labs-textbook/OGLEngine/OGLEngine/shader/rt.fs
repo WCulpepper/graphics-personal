@@ -10,7 +10,7 @@ out vec4 fragColor;
 layout(std430, binding=3) buffer Icosahedron {
     vec3[12] vertices;
     vec3[20] indices;
-}
+} ico;
 
 vec3 rayo, rayd;
 void generateRay() {
@@ -41,14 +41,14 @@ void generateRay() {
 // }
 
 float intersectTriangle(vec3 rayo, vec3 rayd, vec3 p1, vec3 p2, vec3 p3) {
-    double  a,b,c,d,e,f,g,h,i,j,k,l;
-	double beta,gamma,t;
+    float  a,b,c,d,e,f,g,h,i,j,k,l;
+	float beta,gamma,t;
 	
-	double eimhf,gfmdi,dhmeg,akmjb,jcmal,blmkc;
+	float eimhf,gfmdi,dhmeg,akmjb,jcmal,blmkc;
 
-	double M;
+	float M;
 	
-	double dd;
+	float dd;
 	
 	vec3 ma,mb,mc;
 	ma = p1; // point 1
@@ -63,13 +63,13 @@ float intersectTriangle(vec3 rayo, vec3 rayd, vec3 p1, vec3 p2, vec3 p3) {
 	e = ma.y-mc.y;
 	f = ma.z-mc.z;
 	
-	g = r.b.x; // don't know what this is, I assume it's rayd
-	h = r.b.y;
-	i = r.b.z;
+	g = rayd.x; // 
+	h = rayd.y;
+	i = rayd.z;
 	
-	j = ma.x-r.a.x; // 
-	k = ma.y-r.a.y;
-	l = ma.z-r.a.z;
+	j = ma.x-rayo.x; // 
+	k = ma.y-rayo.y;
+	l = ma.z-rayo.z;
 	
 	eimhf = e*i-h*f;
 	gfmdi = g*f-d*i;
@@ -95,8 +95,7 @@ float intersectTriangle(vec3 rayo, vec3 rayd, vec3 p1, vec3 p2, vec3 p3) {
 	return t;
 }
 
-float intersectSphere(vec3 rayo, vec3 rayd, vec3 center, float r)
-{
+float intersectSphere(vec3 rayo, vec3 rayd, vec3 center, float r) {
     float A,B,C; //constants for the quadratic function
     float delta;
     float t,t1,t2;
@@ -123,7 +122,8 @@ float intersectXZPlane(vec3 rayo, vec3 rayd) {
     return t;
 }
 
-vec3 computeColorReflect(vec3 p, vec3 n, vec3 mat) {
+vec3 computeColorReflect(vec3 p, vec3 n, vec3 mat, int i) {
+    
     vec3 lightPos = vec3(4,16,2);
     vec3 ambient = mat*0.1;
     vec3 lightVec;
@@ -131,16 +131,23 @@ vec3 computeColorReflect(vec3 p, vec3 n, vec3 mat) {
     vec3 viewVec;
     int specExp;
 
+    int ia = int(ico.indices[i].x);
+    int ib = int(ico.indices[i].y);
+    int ic = int(ico.indices[i].z);
+
+    vec3 a = ico.vertices[ia];
+    vec3 b = ico.vertices[ib];
+    vec3 c = ico.vertices[ic];
+
     float t1;
     float t2;
     float t3;
     int shadow;
 
     // check for shadow
-    t1 = intersectSphere(p,lightPos-p,sphere1Pos,sphere1Radius);
-    t2 = intersectSphere(p,lightPos-p,sphere2Pos,sphere2Radius);
+    t1 = intersectTriangle(p,lightPos-p, a, b, c);
     t3 = intersectXZPlane(p,lightPos-p);
-    if ((t1>0.0001 && t1<1) || (t2>0.0001 && t2<1) || (t3>0.0001 && t3<1))
+    if ((t1>0.0001 && t1<1) || (t3>0.0001 && t3<1))
         shadow = 1;
     else
         shadow = 0;
@@ -158,7 +165,16 @@ vec3 computeColorReflect(vec3 p, vec3 n, vec3 mat) {
     return diffuse+ambient+specular;
 }
 
-vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor) {
+vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor, int i) {
+
+    int ia = int(ico.indices[i].x);
+    int ib = int(ico.indices[i].y);
+    int ic = int(ico.indices[i].z);
+
+    vec3 a = ico.vertices[ia];
+    vec3 b = ico.vertices[ib];
+    vec3 c = ico.vertices[ic];
+
     vec3 lightPos = vec3(4,16,2);
     vec3 ambient = mat*0.1;
     vec3 lightVec;
@@ -181,8 +197,7 @@ vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor) {
     vec3 rmat;
 
     // check for shadow
-    t1 = intersectSphere(p,lightPos-p,sphere1Pos,sphere1Radius);
-    t2 = intersectSphere(p,lightPos-p,sphere2Pos,sphere2Radius);
+    t1 = intersectTriangle(p,lightPos-p, a, b, c);
     t3 = intersectXZPlane(p,lightPos-p);
     if ((t1>0.0001 && t1<1) || (t2>0.0001 && t2<1) || (t3>0.0001 && t3<1))
         shadow = 1;
@@ -194,20 +209,15 @@ vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor) {
 
     // compute reflected color (trace ray for one step)
     vec3 reflectRay = normalize(reflect(normalize(p-camPos),n));
-    rt1 = intersectSphere(p, reflectRay, sphere1Pos, sphere1Radius);
-    rt2 = intersectSphere(p, reflectRay, sphere2Pos, sphere2Radius);
+    rt1 = intersectTriangle(p, reflectRay, a, b, c);
     rt3 = intersectXZPlane(p, reflectRay);
     if (rt1>0.001 && rt1<rtmin) {
+        vec3 n1 = b-a;
+        vec3 n2 = c-a;
         rtmin = rt1;
         rp = p+reflectRay*rt1;
-        rn = normalize(rp-sphere1Pos);
-        rmat = sphere1Mat;
-    }
-    if (rt2>0.001 && rt2<rtmin) {
-        rtmin = rt2;
-        rp = p+reflectRay*rt2;
-        rn = normalize(rp-sphere2Pos);
-        rmat = sphere2Mat;
+        rn = normalize(cross(n1, n2));
+        rmat = vec3(1.0, 0.0, 0.0);
     }
     if (rt3>0.001 && rt3<rtmin) {
         rtmin = rt3;
@@ -215,7 +225,7 @@ vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor) {
         rn = vec3(0,1,0);
         rmat = vec3(0.6,1.0,0.7);
     }
-    rcolor = computeColorReflect(rp,rn,rmat);
+    rcolor = computeColorReflect(rp,rn,rmat, i);
 
     // compute diffuse and specular
     specExp = 100;
@@ -227,51 +237,49 @@ vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor) {
     return (1-rFactor)*(diffuse+ambient+specular)+rFactor*rcolor;
 }
 
-
-
-
 void main(void)
 {
     // vec3 norm = normalize();
+    int index;
     float t1;
-    float t2;
     float t3;
     float tmin = 10001;
     vec3 mat;
+    vec3 point;
+    vec3 norm;
     generateRay();
 
     for(int i = 0; i < 20; i++) {
-        t1 = intersectTriangle(rayo, rayd, Icosahedron.vertices[Icosahedron.indices[i].x], Icosahedron.vertices[Icosahedron.indices[i].y], Icosahedron.vertices[Icosahedron.indices[i].z]);
-        t2 = intersectTriangle(rayo, rayd, Icosahedron.vertices[Icosahedron.indices[i].x], Icosahedron.vertices[Icosahedron.indices[i].y], Icosahedron.vertices[Icosahedron.indices[i].z]);
-        t3 = intersectXZPlane(rayo, rayd);
-    }
-    t1 = intersectSphere(rayo, rayd, sphere1Pos,sphere1Radius);
-    t2 = intersectSphere(rayo, rayd, sphere2Pos,sphere2Radius);
-    t3 = intersectXZPlane(rayo, rayd);
+        int ia = int(ico.indices[i].x);
+        int ib = int(ico.indices[i].y);
+        int ic = int(ico.indices[i].z);
 
-    vec3 point;
-    vec3 norm;
-    
-    if (t1>1 && t1<tmin) {
-        tmin = t1;
-        point = rayo + rayd*tmin;
-        norm = normalize(point - sphere1Pos);
-        mat = sphere1Mat;
+        vec3 a = ico.vertices[ia];
+        vec3 b = ico.vertices[ib];
+        vec3 c = ico.vertices[ic];
+        t1 = intersectTriangle(rayo, rayd, a, b, c);
+        t3 = intersectXZPlane(rayo, rayd);
+        if (t1>1 && t1<tmin) {
+            tmin = t1;
+            point = rayo + rayd*tmin;
+            vec3 n1 = b-a;
+            vec3 n2 = c-a;
+            norm = normalize(cross(n1, n2));
+            mat = vec3(1.0, 0.0, 0.0);
+            index = i;
+        }
+
+        if (t3>1 && t3<tmin) {
+            norm = vec3(0,1,0);
+            tmin = t3;
+            point = rayo + rayd*tmin;
+            mat = vec3(0.6,1.0,0.7);
+            index = -1;
+        }
     }
-    if (t2>1 && t2<tmin) {
-        tmin = t2;
-        point = rayo + rayd*tmin;
-        norm = normalize(point - sphere2Pos);
-        mat = sphere2Mat;
-    }
-    if (t3>1 && t3<tmin) {
-        norm = vec3(0,1,0);
-        tmin = t3;
-        point = rayo + rayd*tmin;
-        mat = vec3(0.6,1.0,0.7);
-    }
+
     if (tmin<10000)
-        fragColor = vec4(computeColor(point, norm, mat, 0.5),1.0);
+        fragColor = vec4(computeColor(point, norm, mat, 0.5, index),1.0);
     else
         fragColor = vec4(0.2, 0.2, 0.2, 1);
 }
