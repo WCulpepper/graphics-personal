@@ -767,10 +767,14 @@ void OGLEngine::shutdown() {
 }
 
 void OGLEngine::_cleanupShaders() {
-	
+	fprintf(stdout, "[INFO]: Cleaning up shaders...\n");
 }
 
 void OGLEngine::_cleanupBuffers() {
+	fprintf(stdout, "[INFO]: Cleaning up buffers...\n");
+	delete objects.teapot;
+	delete objects.cube;
+	delete objects.ico;
 	glDeleteVertexArrays(1, &icoVAO);
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &teapotVAO);
@@ -778,7 +782,7 @@ void OGLEngine::_cleanupBuffers() {
 }
 
 void OGLEngine::_cleanupTextures() {
-	
+	fprintf(stdout, "[INFO]: Cleaning up textures...\n");
 }
 
 void OGLEngine::_cleanupScene() {
@@ -791,6 +795,7 @@ void OGLEngine::_cleanupOGL() {
 }
 
 void OGLEngine::_cleanupGLFW() {
+	fprintf(stdout, "[INFO]: Cleaning up window object...\n");
 	glfwDestroyWindow(_window);
 	_window = nullptr;
 	glfwTerminate();
