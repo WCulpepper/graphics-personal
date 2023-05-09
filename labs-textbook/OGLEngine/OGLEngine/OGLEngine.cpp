@@ -6,10 +6,13 @@
 
 #define M_PI 3.14159265358979323846
 
+#define BUFFER_OFFSET(i) ((char*)NULL + (i))
+
 GLuint icoVAO;
 GLuint cubeVAO;
 GLuint teapotVAO;
 GLuint groundVAO;
+
 
 bool usePhongSpec = true;
 
@@ -289,6 +292,8 @@ void OGLEngine::_setupShaders()
 	_rtUniformLocations.cameraPos = glGetUniformLocation(_rtProgram, "camPos");
 	_rtUniformLocations.cameraUp = glGetUniformLocation(_rtProgram, "camUp");
 	_rtUniformLocations.cameraGaze = glGetUniformLocation(_rtProgram, "camGaze");	
+	_rtUniformLocations.mvpMtx = glGetUniformLocation(_rtProgram, "mvpMtx");
+	_rtUniformLocations.normalMtx = glGetUniformLocation(_rtProgram, "normalMtx");
 
 	glUniform4f(_wfUniformLocations.lineColor, 1.0f,1.0f,1.0f,1.0f);
 	glUniform1f(_wfUniformLocations.lineWidth, 0.8f);
@@ -313,19 +318,73 @@ void OGLEngine::_setupBuffers() {
 	GLuint normal_base_buffer;
 
 	// non-interpolated vertex data
+
+	GLfloat positionData[] = {
+        -1, -1,
+        1, -1, 
+        1, 1, 
+        -1, 1
+    };
+
+    GLfloat texCoord[] = {
+        0, 0,
+        1, 0,
+        1, 1,
+        0, 1 
+    }; 
+
+    GLuint indexData[] = {
+        0, 1, 2, 
+        3, 0, 2
+    }; 
 	
 
 	struct IcoSSBOData {
-		vec3 vdata_ico[12] = { vec3(-IX, 0.0, IZ), vec3(IX, 0.0, IZ), vec3(-IX, 0.0, -IZ), vec3(IX, 0.0, -IZ),    
-							vec3(0.0, IZ, IX), vec3(0.0, IZ, -IX), vec3(0.0, -IZ, IX), vec3(0.0, -IZ, -IX),    
-							vec3(IZ, IX, 0.0), vec3(-IZ, IX, 0.0), vec3(IZ, -IX, 0.0), vec3(-IZ, -IX, 0.0) 
+		vec4 vdata_ico[12] = { vec4(-IX, 0.0, IZ, 1.0), vec4(IX, 0.0, IZ, 1.0), vec4(-IX, 0.0, -IZ, 1.0), vec4(IX, 0.0, -IZ, 1.0),    
+							vec4(0.0, IZ, IX, 1.0), vec4(0.0, IZ, -IX, 1.0), vec4(0.0, -IZ, IX, 1.0), vec4(0.0, -IZ, -IX, 1.0),    
+							vec4(IZ, IX, 0.0, 1.0), vec4(-IZ, IX, 0.0, 1.0), vec4(IZ, -IX, 0.0, 1.0), vec4(-IZ, -IX, 0.0, 1.0) 
 		};
 
-		vec3 indices[20] = { vec3(0,4,1), vec3(0,9,4), vec3(9,5,4), vec3(4,5,8), vec3(4,8,1),    
-							vec3(8,10,1), vec3(8,3,10), vec3(5,3,8), vec3(5,2,3), vec3(2,7,3),    
-							vec3(7,10,3), vec3(7,6,10), vec3(7,11,6), vec3(11,0,6), vec3(0,1,6), 
-							vec3(6,1,10), vec3(9,0,11), vec3(9,11,2), vec3(9,2,5), vec3(7,2,11)  };
+		vec4 indices[20] = { vec4(0,4,1, 1), vec4(0,9,4, 1), vec4(9,5,4, 1), vec4(4,5,8, 1), vec4(4,8,1, 1),    
+							vec4(8,10,1, 1), vec4(8,3,10, 1), vec4(5,3,8, 1), vec4(5,2,3, 1), vec4(2,7,3, 1),    
+							vec4(7,10,3, 1), vec4(7,6,10, 1), vec4(7,11,6, 1), vec4(11,0,6, 1), vec4(0,1,6, 1), 
+							vec4(6,1,10, 1), vec4(9,0,11, 1), vec4(9,11,2, 1), vec4(9,2,5, 1), vec4(7,2,11, 1)  };
 	} icoSSBOData;
+
+	vec4 vdata_icoSSBO[12] = { vec4(-IX, 0.0, IZ, 1.0), vec4(IX, 0.0, IZ, 1.0), vec4(-IX, 0.0, -IZ, 1.0), vec4(IX, 0.0, -IZ, 1.0),    
+							vec4(0.0, IZ, IX, 1.0), vec4(0.0, IZ, -IX, 1.0), vec4(0.0, -IZ, IX, 1.0), vec4(0.0, -IZ, -IX, 1.0),    
+							vec4(IZ, IX, 0.0, 1.0), vec4(-IZ, IX, 0.0, 1.0), vec4(IZ, -IX, 0.0, 1.0), vec4(-IZ, -IX, 0.0, 1.0) 
+	};
+
+	vec4 ndata_icoSSBO[12] = { normalize(vec4(-IX, 0.0, IZ, 1.0)), normalize(vec4(IX, 0.0, IZ, 1.0)), normalize(vec4(-IX, 0.0, -IZ, 1.0)), normalize(vec4(IX, 0.0, -IZ, 1.0)),    
+							normalize(vec4(0.0, IZ, IX, 1.0)), normalize(vec4(0.0, IZ, -IX, 1.0)), normalize(vec4(0.0, -IZ, IX, 1.0)), normalize(vec4(0.0, -IZ, -IX, 1.0)),    
+							normalize(vec4(IZ, IX, 0.0, 1.0)), normalize(vec4(-IZ, IX, 0.0, 1.0)), normalize(vec4(IZ, -IX, 0.0, 1.0)), normalize(vec4(-IZ, -IX, 0.0, 1.0)) 
+		};
+
+	vec4 indices_icoSSBO[20] = { vec4(0,4,1, 1), vec4(0,9,4, 1), vec4(9,5,4, 1), vec4(4,5,8, 1), vec4(4,8,1, 1),    
+							vec4(8,10,1, 1), vec4(8,3,10, 1), vec4(5,3,8, 1), vec4(5,2,3, 1), vec4(2,7,3, 1),    
+							vec4(7,10,3, 1), vec4(7,6,10, 1), vec4(7,11,6, 1), vec4(11,0,6, 1), vec4(0,1,6, 1), 
+							vec4(6,1,10, 1), vec4(9,0,11, 1), vec4(9,11,2, 1), vec4(9,2,5, 1), vec4(7,2,11, 1)  };
+
+
+
+	struct CubeSSBOData {
+		vec4 vdata_cube[8] = { vec4(-0.5, -0.5, -0.5, 1.0),
+            vec4(0.5, -0.5, -0.5, 1.0),
+            vec4(0.5,  0.5, -0.5, 1.0),
+            vec4(-0.5, 0.5, -0.5, 1.0),
+            vec4(-0.5, -0.5, 0.5, 1.0), 
+            vec4(0.5, -0.5, 0.5, 1.0),
+            vec4(0.5, 0.5, 0.5, 1.0),
+            vec4(-0.5, 0.5, 0.5, 1.0) };
+		
+		vec4 indices[12] = { vec4(0, 2, 1, 1), vec4(0, 3, 2, 1),
+            vec4(1, 2, 5, 1), vec4(5, 2, 6, 1), 
+            vec4(2, 7, 6, 1), vec4(3, 7, 2, 1), 
+            vec4(0, 1, 4, 1), vec4(1, 5, 4, 1), 
+            vec4(4, 5, 6, 1), vec4(4, 6, 7, 1), 
+            vec4(0, 4, 3, 1), vec4(4, 7, 3, 1) };
+	} cubeSSBOData;
 
 	// These are the 12 vertices for the icosahedron, interpolated with texture coordinates
 	Vertex icoVerts[12] = {
@@ -405,13 +464,64 @@ void OGLEngine::_setupBuffers() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ico_index_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 60*sizeof(int), (void *)&(tindices[0][0]), GL_STATIC_DRAW);
 
+	GLuint vao, vertexAttribBuffer, indexBuffer;
+	glGenVertexArrays(1, &vao);
+
+    glBindVertexArray(vao);
+
+	glEnableVertexAttribArray(0); // position
+	glEnableVertexAttribArray(1); // texCoord
+
+    // generate a simple quad 2D with two triangles
+    // 4 vertices
+    // 6 indices for the 2 triangles in total
+
+	glGenBuffers(1, &vertexAttribBuffer);
+	glGenBuffers(1, &indexBuffer);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+	glBufferData(GL_ARRAY_BUFFER, 16*sizeof(GLfloat), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, 8*sizeof(GLfloat), positionData);
+	glBufferSubData(GL_ARRAY_BUFFER, 8*sizeof(GLfloat), 8*sizeof(GLfloat), texCoord);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6*sizeof(GLuint), indexData, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0); // vertex position
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(8*sizeof(GLfloat))); // texCoord
+
+
+
 	GLuint icoSSBO;
 	glGenBuffers(1, &icoSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, icoSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(icoSSBOData), &icoSSBOData, GL_DYNAMIC_COPY);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, icoSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+	GLuint icoVertexSSBO;
+	glGenBuffers(1, &icoVertexSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, icoVertexSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vdata_icoSSBO), &vdata_icoSSBO, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, icoVertexSSBO);
+
+	GLuint icoNormalSSBO;
+	glGenBuffers(1, &icoNormalSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, icoNormalSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ndata_icoSSBO), &ndata_icoSSBO,GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, icoNormalSSBO);
+
+	GLuint icoIndexSSBO;
+	glGenBuffers(1, &icoIndexSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, icoIndexSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(indices_icoSSBO), &indices_icoSSBO, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, icoIndexSSBO);
+
+	GLuint cubeSSBO;
+	glGenBuffers(1, &cubeSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, cubeSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(cubeSSBOData), &cubeSSBOData, GL_DYNAMIC_COPY);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, cubeSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	// CUBE BUFFERS
 	glGenBuffers(1, &cube_vertpos_buffer);
@@ -607,15 +717,14 @@ unsigned int loadShader(const char *source, unsigned int mode) {
 	return id;
 }
 
-void showFPS(GLFWwindow* window) {
+void OGLEngine::_showFPS(GLFWwindow* window) {
         double currentTime = glfwGetTime();
         double delta = currentTime - lastTime;
 	    char ss[500] = {};
-		std::string wTitle = "A2";
         nFrames++;
         if ( delta >= 1.0 ){ // If last update was more than 1 sec ago
             double fps = ((double)(nFrames)) / delta;
-            sprintf(ss,"%s running at %lf FPS.",wTitle.c_str(),fps);
+            sprintf(ss,"%s running at %lf FPS.",_windowTitle,fps);
             glfwSetWindowTitle(window, ss);
             nFrames = 0;
             lastTime = currentTime;
@@ -646,10 +755,13 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 	normalMtx = glm::mat3(glm::transpose(glm::inverse(mv)));
 	glm::mat3 nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
 
+	glUniformMatrix4fv(_rtUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
+	glUniformMatrix3fv(_rtUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
+
 	glUniformMatrix4fv(_wfUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
 	glUniformMatrix4fv(_wfUniformLocations.mvMtx, 1, GL_FALSE, &(mv)[0][0]);
 	glUniformMatrix4fv(_wfUniformLocations.modelMtx, 1, GL_FALSE, &(model)[0][0]);
-	glUniformMatrix4fv(_wfUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
+	glUniformMatrix3fv(_wfUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
 	glUniformMatrix4fv(_wfUniformLocations.viewportMtx, 1, GL_FALSE, &(viewportMtx)[0][0]);
 
 	if(usePhongSpec) {
@@ -670,7 +782,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 			// objects.cube->render();
 			break;
 		case 3:
-			glUseProgram(_teapotProgram);
+			// glUseProgram(_teapotProgram);
 			model = glm::scale(model, vec3(0.25, 0.25, 0.25));
 			model = glm::rotate(model, glm::radians(-90.0f), vec3(1,0,0));
 			mv = viewMtx * model;
@@ -748,8 +860,7 @@ void OGLEngine::run()
                      vec4(w2+0, h2+0, 0.0f, 1.0f));
 		_updateScene();
 		_renderScene(viewMatrix, projectionMatrix, viewportMatrix);
-		// showFPS(_window);
-
+		_showFPS(_window);
         glfwSwapBuffers(_window);
         glfwPollEvents();
     }

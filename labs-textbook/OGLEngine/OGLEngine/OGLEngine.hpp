@@ -74,7 +74,7 @@ private:
     void _setupTextures();
     void _setupScene();
 
-
+    void _showFPS(GLFWwindow* window);
 
     void _renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx);
     void _updateScene();
@@ -171,6 +171,8 @@ private:
     struct RTUniformLocations {
         GLint projectionMtx;
         GLint viewMtx;
+        GLint mvpMtx;
+        GLint normalMtx;
         GLint cameraPos;
         GLint cameraUp;
         GLint cameraGaze;

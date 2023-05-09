@@ -6,6 +6,7 @@ layout(location=1) in vec2 inTexture;
 uniform mat4 projectionMtx;
 uniform mat4 viewMtx;
 
+
 out vec2 tCoord;
 
 void main(void)

@@ -15,15 +15,16 @@ uniform float sphere2Reflect;
 in vec2 texCoord;
 out vec4 fragColor;
 
-struct PlasticMaterial {
-    vec3 ambient = vec3(0.1,0.1,0.1);
-    vec3 diffuse = vec3(0.55,0.55,0.55);
-    vec3 specular = vec3(0.7,0.7,0.7);
-    vec3 BRDF = diffuse/radians(180);
-    float shininess = 0.25;
-} whitePlastic;
+float PI = radians(180);
 
-int maxDepth = 2;
+
+vec3 whitePlasticAmbient = vec3(0.1,0.1,0.1);
+vec3 whitePlasticDiffuse = vec3(0.55,0.55,0.55);
+vec3 whitePlasticSpecular = vec3(0.7,0.7,0.7);
+vec3 whitePlasticBRDF = whitePlasticDiffuse/PI;
+float whitePlasticShininess = 0.25;
+
+int maxDepth = 1;
 
 vec3 rayo, rayd;
 void generateRay() {
@@ -92,7 +93,7 @@ float intersectRightYZPlane(vec3 rayo, vec3 rayd) {
 float intersectXYPlane(vec3 rayo, vec3 rayd) {
     float t;
     if(rayd.z==0.0) return -1;
-    t = -(rayo.z-5)/(rayd.z-5);
+    t = -(rayo.z-10)/(rayd.z-10);
 }
 
 
@@ -249,24 +250,14 @@ vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor) {
     return (1-rFactor)*(diffuse+ambient+specular)+rFactor*rcolor;
 }
 
-// RNG code taken from https://thebookofshaders.com/10/
-
-float rand(float x) {
-    return fract(sin(x)*10);
-}
-float 2DRand(vec2 v) {
-    return fract(sin(dot(v.xy, vec2(12.9898,78.233)))*43758.5453123);
-}
-
 vec3 generateRandomUnitVector(vec3 normal) {
-    return normalize(vec3(2DRand(normal), rand(normal.z)));
+    float randX = normal.x*noise1(normal.x);
+    float randY = normal.y*noise1(normal.y);
+    float randZ = normal.z*noise1(normal.z);
+    return normalize(vec3(randX, randY, randZ));
 }
 
-vec3 tracePath(vec3 rayo, vec3 rayd, int depth) {
-    if(depth > maxDepth) {
-        return whitePlastic.ambient;
-    }
-
+vec3 tracePathDepthOne(vec3 rayo, vec3 rayd) {
     float t1;
     float t2;
     float t3;
@@ -321,17 +312,88 @@ vec3 tracePath(vec3 rayo, vec3 rayd, int depth) {
         tmin = t7;
         point = rayo + rayd*tmin;
     }
-
-    vec3 newRayO = point;
-    vec3 newRayD = vec3(0); //generate random unit vector
+    else {
+        return vec3(0);
+    }
+    return whitePlasticDiffuse;
 
 }
 
+vec3 tracePath(vec3 rayo, vec3 rayd) {
 
+    float t1;
+    float t2;
+    float t3;
+    float t4;
+    float t5;
+    float t6;
+    float t7;
+    float tmin = 10001;
 
+    t1 = intersectSphere(rayo, rayd, sphere1Pos,sphere1Radius);
+    t2 = intersectSphere(rayo, rayd, sphere2Pos,sphere2Radius);
+    t3 = intersectXZPlane(rayo, rayd);
+    t4 = intersectUpperXZPlane(rayo, rayd);
+    t5 = intersectXYPlane(rayo, rayd);
+    t6 = intersectLeftYZPlane(rayo, rayd);
+    t7 = intersectRightYZPlane(rayo, rayd);
+    
+    vec3 point;
+    vec3 norm;
+    
+    if (t1>1 && t1<tmin) {
+        tmin = t1;
+        point = rayo + rayd*tmin;
+        norm = normalize(point - sphere1Pos);
+    }
+    if (t2>1 && t2<tmin) {
+        tmin = t2;
+        point = rayo + rayd*tmin;
+        norm = normalize(point - sphere2Pos);
+    }
+    if (t3>1 && t3<tmin) {
+        norm = vec3(0,1,0);
+        tmin = t3;
+        point = rayo + rayd*tmin;
+    }
+    if (t4>1 && t4<tmin) {
+        norm = vec3(0,1,0);
+        tmin = t4;
+        point = rayo + rayd*tmin;
+    }
+    if (t5>1 && t5<tmin) {
+        norm = vec3(0,0,1);
+        tmin = t5;
+        point = rayo + rayd*tmin;
+    }
+    if (t6>1 && t6<tmin) {
+        norm = vec3(1,0,0);
+        tmin = t6;
+        point = rayo + rayd*tmin;
+    }
+    if (t7>1 && t7<tmin) {
+        norm = vec3(-1,0,0);
+        tmin = t7;
+        point = rayo + rayd*tmin;
+    }
+    else {
+        return vec3(0); // returns an approximate shadow color
+    }
+
+    vec3 newRayO = point;
+    vec3 newRayD = generateRandomUnitVector(norm); //generate random unit vector
+    
+    float p = 1/(2*PI);
+    float cos_theta = dot(newRayD, norm);
+
+    vec3 incomingColor = tracePathDepthOne(newRayO, newRayD);
+    
+    return whitePlasticAmbient + (whitePlasticBRDF*incomingColor*cos_theta/p);
+}
 
 void main(void)
 {
+    float numSamples = 20;
     // vec3 norm = normalize();
     float t1;
     float t2;
@@ -346,7 +408,7 @@ void main(void)
     
 
     if (tmin<10000)
-        fragColor = vec4(computeColor(point, norm, mat, 0.5),1.0);
+        fragColor = vec4(tracePath(rayo, rayd),1.0)/numSamples;
     else
         fragColor = vec4(0.2, 0.2, 0.2, 1);
 }

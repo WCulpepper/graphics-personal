@@ -7,10 +7,32 @@ uniform vec3 camUp;
 in vec2 texCoord;
 out vec4 fragColor;
 
+uniform mat4 projectionMtx;
+uniform mat4 viewMtx;
+uniform mat4 mvpMtx;
+uniform mat3 normalMtx;
+
+layout(std430, binding=0) buffer VertexList {
+    vec4[] vertices;
+} vertexList;
+
+layout(std430, binding=1) buffer NormalsList {
+    vec4[] normals;
+} normalsList;
+
+layout(std430, binding=2) buffer IndexList {
+    ivec4[] indices;
+} indexList;
+
 layout(std430, binding=3) buffer Icosahedron {
-    vec3[12] vertices;
-    vec3[20] indices;
+    vec4[12] vertices;
+    ivec4[20] indices;
 } ico;
+
+layout(std430, binding=4) buffer Cube {
+    vec4[8] vertices;
+    ivec4[12] indices;
+} cube;
 
 vec3 rayo, rayd;
 void generateRay() {
@@ -26,19 +48,6 @@ void generateRay() {
     rayo = camPos; // ray origin
     rayd = pixelCenter-camPos; // ray direction
 }
-
-// intersects a triangle, assuming a counter-clockwise winding of the points.
-//    B
-// C /\ A
-
-
-// float intersectTriangle(vec3 rayo, vec3 rayd, vec3 p1, vec3 p2, vec3 p3) {
-//     vec3 sideBA = p2 - p1;
-//     vec3 sideCA = p3 - p1;
-//     vec3 pointToTri = rayo - p1;
-
-//     float d = 0;
-// }
 
 float intersectTriangle(vec3 rayo, vec3 rayd, vec3 p1, vec3 p2, vec3 p3) {
     float  a,b,c,d,e,f,g,h,i,j,k,l;
@@ -131,13 +140,13 @@ vec3 computeColorReflect(vec3 p, vec3 n, vec3 mat, int i) {
     vec3 viewVec;
     int specExp;
 
-    int ia = int(ico.indices[i].x);
-    int ib = int(ico.indices[i].y);
-    int ic = int(ico.indices[i].z);
+    int ia = indexList.indices[i].x;
+    int ib = indexList.indices[i].y;
+    int ic = indexList.indices[i].z;
 
-    vec3 a = ico.vertices[ia];
-    vec3 b = ico.vertices[ib];
-    vec3 c = ico.vertices[ic];
+    vec3 a = (vertexList.vertices[ia]).xyz;
+    vec3 b = (vertexList.vertices[ib]).xyz;
+    vec3 c = (vertexList.vertices[ic]).xyz;
 
     float t1;
     float t2;
@@ -167,13 +176,13 @@ vec3 computeColorReflect(vec3 p, vec3 n, vec3 mat, int i) {
 
 vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor, int i) {
 
-    int ia = int(ico.indices[i].x);
-    int ib = int(ico.indices[i].y);
-    int ic = int(ico.indices[i].z);
+    int ia = indexList.indices[i].x;
+    int ib = indexList.indices[i].y;
+    int ic = indexList.indices[i].z;
 
-    vec3 a = ico.vertices[ia];
-    vec3 b = ico.vertices[ib];
-    vec3 c = ico.vertices[ic];
+    vec3 a = (vertexList.vertices[ia]).xyz;
+    vec3 b = (vertexList.vertices[ib]).xyz;
+    vec3 c = (vertexList.vertices[ic]).xyz;
 
     vec3 lightPos = vec3(4,16,2);
     vec3 ambient = mat*0.1;
@@ -199,13 +208,13 @@ vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor, int i) {
     // check for shadow
     t1 = intersectTriangle(p,lightPos-p, a, b, c);
     t3 = intersectXZPlane(p,lightPos-p);
-    if ((t1>0.0001 && t1<1) || (t2>0.0001 && t2<1) || (t3>0.0001 && t3<1))
-        shadow = 1;
-    else
-        shadow = 0;
+    // if ((t1>0.0001 && t1<1) || (t2>0.0001 && t2<1) || (t3>0.0001 && t3<1))
+    //     shadow = 1;
+    // else
+    //     shadow = 0;
 
-    if(shadow == 1)
-        return ambient;
+    // if(shadow == 1)
+    //     return ambient;
 
     // compute reflected color (trace ray for one step)
     vec3 reflectRay = normalize(reflect(normalize(p-camPos),n));
@@ -216,7 +225,7 @@ vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor, int i) {
         vec3 n2 = c-a;
         rtmin = rt1;
         rp = p+reflectRay*rt1;
-        rn = normalize(cross(n1, n2));
+        rn = normalize(cross(n2, n1));
         rmat = vec3(1.0, 0.0, 0.0);
     }
     if (rt3>0.001 && rt3<rtmin) {
@@ -233,7 +242,7 @@ vec3 computeColor(vec3 p, vec3 n, vec3 mat, float rFactor, int i) {
     viewVec = normalize(camPos-p);
     halfVec = normalize(lightVec+viewVec);
     vec3 specular = pow(dot(halfVec,n),specExp)*vec3(1,1,1);
-    vec3 diffuse = dot(lightVec,n)*mat;
+    vec3 diffuse = max(dot(lightVec,n), 0)*mat;
     return (1-rFactor)*(diffuse+ambient+specular)+rFactor*rcolor;
 }
 
@@ -250,13 +259,13 @@ void main(void)
     generateRay();
 
     for(int i = 0; i < 20; i++) {
-        int ia = int(ico.indices[i].x);
-        int ib = int(ico.indices[i].y);
-        int ic = int(ico.indices[i].z);
+        int ia = indexList.indices[i].x;
+        int ib = indexList.indices[i].y;
+        int ic = indexList.indices[i].z;
 
-        vec3 a = ico.vertices[ia];
-        vec3 b = ico.vertices[ib];
-        vec3 c = ico.vertices[ic];
+        vec3 a = (vertexList.vertices[ia]).xyz;
+        vec3 b = (vertexList.vertices[ib]).xyz;
+        vec3 c = (vertexList.vertices[ic]).xyz;
         t1 = intersectTriangle(rayo, rayd, a, b, c);
         t3 = intersectXZPlane(rayo, rayd);
         if (t1>1 && t1<tmin) {
