@@ -261,7 +261,7 @@ void OGLEngine::_setupShaders()
 	glLinkProgram(_teapotProgram); 
 	glLinkProgram(_rtProgram);
 
-	glUseProgram(_rtProgram);
+	glUseProgram(_wireframeProgram);
 
 	_wfUniformLocations.mvpMtx = glGetUniformLocation(_wireframeProgram,"MVP");
 	_wfUniformLocations.mvMtx = glGetUniformLocation(_wireframeProgram, "MV");
@@ -800,7 +800,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 		default: break;
 	}
 
-	glUseProgram(_rtProgram);
+	glUseProgram(_wireframeProgram);
 
 	glBindVertexArray(groundVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
