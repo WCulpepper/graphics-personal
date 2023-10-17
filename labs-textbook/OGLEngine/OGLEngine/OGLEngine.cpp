@@ -271,6 +271,7 @@ void OGLEngine::_setupShaders()
 	_wfUniformLocations.cameraPos = glGetUniformLocation(_wireframeProgram, "cameraPos");
 	_wfUniformLocations.lineWidth = glGetUniformLocation(_wireframeProgram, "Line.width");
 	_wfUniformLocations.lineColor = glGetUniformLocation(_wireframeProgram, "Line.color");
+	_wfUniformLocations.materialIndex = glGetUniformBlockIndex(_wireframeProgram, "MaterialSettings");
 
 	_wfSubroutineLocations.phongSpec = glGetSubroutineIndex(_wireframeProgram, GL_FRAGMENT_SHADER, "specularPhong");
 	_wfSubroutineLocations.blinnPhongSpec = glGetSubroutineIndex(_wireframeProgram, GL_FRAGMENT_SHADER, "specularBlinnPhong");
@@ -441,6 +442,7 @@ void OGLEngine::_setupBuffers() {
 	static GLfloat normaldata_base[4][3] {
 		{0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}
 	};
+
 	
 	// ICOSAHEDRON BUFFERS
 	GLuint icoVBODs[2];
@@ -731,6 +733,30 @@ void OGLEngine::_showFPS(GLFWwindow* window) {
         }
 }
 
+void OGLEngine::_setMaterial(Materials::Material m) {
+	GLint materialBlockSize;
+	glGetActiveUniformBlockiv(_wireframeProgram, _wfUniformLocations.materialIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &materialBlockSize);
+	GLubyte *materialBlockBuffer;
+	materialBlockBuffer = (GLubyte*)malloc(materialBlockSize);
+
+	const GLchar *materialPropertyNames[] = {"materialDiffuse", "materialSpecular", "materialShininess", "materialAmbient"};
+	GLuint materialIndices[4];
+	glGetUniformIndices(_wireframeProgram, 4, materialPropertyNames, materialIndices);
+	GLint offset[4];
+	glGetActiveUniformsiv(_wireframeProgram, 4, materialIndices, GL_UNIFORM_OFFSET, offset);
+
+	memcpy(materialBlockBuffer + offset[0], m.diffuse, sizeof(float[4]));
+	memcpy(materialBlockBuffer + offset[1], m.specular, sizeof(float[4]));
+	memcpy(materialBlockBuffer + offset[2], &m.shininess, sizeof(float));
+	memcpy(materialBlockBuffer + offset[3], m.ambient, sizeof(float[4]));
+
+	GLuint materialUBOHandle;
+	glGenBuffers(1, &materialUBOHandle);
+	glBindBuffer(GL_UNIFORM_BUFFER, materialUBOHandle);
+	glBufferData(GL_UNIFORM_BUFFER, materialBlockSize, materialBlockBuffer, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, materialUBOHandle);
+}
+
 void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx) {
 	if(!_wireframeProgram || !_teapotProgram || !_rtProgram) {
 		std::cout << "Failed to load shader programs!\n"; 
@@ -769,6 +795,8 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 	} else {
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &_wfSubroutineLocations.blinnPhongSpec);
 	}
+
+	_setMaterial(Materials::RUBY);
 
 	switch(modelToRender){
 		case 1: 
@@ -830,7 +858,7 @@ void OGLEngine::run()
 	glm::mat4 viewMatrix, projectionMatrix;
 
     glEnable(GL_DEPTH_TEST);
-	glClearColor(0.1,0.1,0.1,0);
+	glClearColor(0.4,0.4,0.4,0);
 	
 	glPatchParameteri(GL_PATCH_VERTICES, 16);
 

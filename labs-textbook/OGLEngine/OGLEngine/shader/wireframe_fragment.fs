@@ -12,9 +12,14 @@ uniform vec4 DarkWoodColor = vec4( 0.8, 0.5, 0.1, 1.0 );
 uniform vec4 LightWoodColor = vec4( 1.0, 0.75, 0.25, 1.0 );
 uniform mat4 Slice = mat4(1.0);
 
-uniform vec3 ambient = vec3(0.05, 0.0, 0.075);
-uniform vec3 objectColor = vec3(0.67, 0.0, 1.0);
-uniform float materialSI = 0.5;
+layout (binding = 0) uniform MaterialSettings {
+    float materialDiffuse[4];
+    float materialSpecular[4];
+    float materialShininess;
+    float materialAmbient[4];
+};
+
+uniform bool standardShading = true;
 
 vec3 corners[12] = {
     vec3(1,1,0),vec3(-1,1,0),vec3(1,-1,0),vec3(-1,-1,0),
@@ -40,7 +45,10 @@ vec3 diffusePhong(vec3 s, vec3 n) {
     vec3 lightDir = normalize(s - gPosition);
     float diff = max(dot(n, lightDir), 0.0);
     vec3 diffuse = diff*lightColor;
-    return diffuse;
+    if(standardShading)
+        return diffuse*vec3(materialDiffuse[0], materialDiffuse[1], materialDiffuse[2]);
+    else
+        return diffuse;
 }
 
 subroutine vec3 processSpecular();
@@ -52,8 +60,11 @@ vec3 specularPhong() {
     vec3 view = normalize(cameraPos - gPosition);
     vec3 r = reflect(-lightDir, gNormal);
     float spec = pow(max(dot(view, r), 0.0), 32);
-    vec3 specular = materialSI*spec*lightColor*100;
-    return specular;
+    vec3 specular = materialShininess*spec*lightColor*100;
+    if(standardShading)
+        return specular*vec3(materialSpecular[0], materialSpecular[1], materialSpecular[2]);
+    else
+        return specular;
 }
 
 subroutine(processSpecular)
@@ -62,8 +73,11 @@ vec3 specularBlinnPhong() {
     vec3 view = normalize(cameraPos - gPosition);
     vec3 halfway = normalize(view + lightDir);
     float spec = pow(max(dot(halfway, gNormal), 0.0), 32);
-    vec3 specular = materialSI*spec*lightColor*100;
-    return specular;
+    vec3 specular = materialShininess*spec*lightColor*100;
+    if(standardShading)
+        return specular*vec3(materialSpecular[0], materialSpecular[1], materialSpecular[2]);
+    else
+        return specular;
 }
 
 vec3 gradients[16];
@@ -159,10 +173,13 @@ void main() {
 
     float mixVal = smoothstep(Line.width - 1, Line.width + 1, d);
 
-    vec3 color = (diffusePhong(lightPos, gNormal) + specularProcessor() + ambient);
-    FragColor = mix(Line.color, vec4(color, 1.0)*woodColor, mixVal);
+    vec3 color = (diffusePhong(lightPos, gNormal) + specularProcessor());
+    if(standardShading)
+        FragColor = mix(Line.color, vec4(color, 1.0), mixVal);
+    else
+        FragColor = mix(Line.color, vec4(color, 1.0)*woodColor, mixVal);
     // FragColor = vec4(1.0,1.0,1.0,1.0);
-    //FragColor = vec4(gPosition, 1.0);
+    // FragColor = vec4(gPosition, 1.0);
     // FragColor = vec4(gNormal, 1.0);
     // FragColor = vec4(tCoord, 1.0, 1.0);
 }

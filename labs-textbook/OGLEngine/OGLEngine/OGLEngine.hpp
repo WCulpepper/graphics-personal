@@ -19,6 +19,7 @@
 #include "teapotpatch.h"
 #include "cube.h"
 #include "icosahedron.h"
+#include "Materials.hpp"
 
 class OGLEngine {
 public: 
@@ -78,6 +79,7 @@ private:
 
     void _renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx);
     void _updateScene();
+    void _setMaterial(Materials::Material m);
 
     void _cleanupBuffers();
     void _cleanupShaders();
@@ -146,6 +148,7 @@ private:
         GLint cameraPos;
         GLint lineWidth;
         GLint lineColor;
+        GLint materialIndex;
     } _wfUniformLocations;
 
     struct WFSubroutineLocations {
