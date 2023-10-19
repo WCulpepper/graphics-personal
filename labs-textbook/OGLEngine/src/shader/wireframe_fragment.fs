@@ -20,6 +20,7 @@ layout (binding = 0) uniform MaterialSettings {
 };
 
 uniform bool standardShading = true;
+uniform bool showWireFrame;
 
 vec3 corners[12] = {
     vec3(1,1,0),vec3(-1,1,0),vec3(1,-1,0),vec3(-1,-1,0),
@@ -175,7 +176,10 @@ void main() {
 
     vec3 color = (diffusePhong(lightPos, gNormal) + specularProcessor() + vec3(materialAmbient[0], materialAmbient[1], materialAmbient[2]));
     if(standardShading)
-        FragColor = mix(Line.color, vec4(color, 1.0), mixVal);
+        if(showWireFrame)
+            FragColor = mix(Line.color, vec4(color, 1.0), mixVal);
+        else   
+            FragColor = vec4(color, 1.0);
     else
         FragColor = mix(Line.color, vec4(color, 1.0)*woodColor, mixVal);
     // FragColor = vec4(1.0,1.0,1.0,1.0);

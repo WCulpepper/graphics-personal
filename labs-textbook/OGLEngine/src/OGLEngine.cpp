@@ -15,6 +15,7 @@ GLuint groundVAO;
 
 
 bool usePhongSpec = false;
+bool showWireFrame = false;
 
 int lastTime = 0;
 int nFrames = 0;
@@ -86,6 +87,8 @@ void OGLEngine::keyEventHandler(GLint key, GLint action) {
 		usePhongSpec = true;
 	if (key == GLFW_KEY_0 && action == GLFW_PRESS)
 		usePhongSpec = false;
+	if (key == GLFW_KEY_W && action == GLFW_PRESS)
+		showWireFrame = !showWireFrame;
 }
 
 void OGLEngine::mbEventHandler(GLint button, GLint action) {
@@ -283,6 +286,7 @@ void OGLEngine::_setupShaders()
 	_wfUniformLocations.lineWidth = glGetUniformLocation(_wireframeProgram, "Line.width");
 	_wfUniformLocations.lineColor = glGetUniformLocation(_wireframeProgram, "Line.color");
 	_wfUniformLocations.materialIndex = glGetUniformBlockIndex(_wireframeProgram, "MaterialSettings");
+	_wfUniformLocations.wfBoolLocation = glGetUniformLocation(_wireframeProgram, "showWireFrame");
 
 	_wfSubroutineLocations.phongSpec = glGetSubroutineIndex(_wireframeProgram, GL_FRAGMENT_SHADER, "specularPhong");
 	_wfSubroutineLocations.blinnPhongSpec = glGetSubroutineIndex(_wireframeProgram, GL_FRAGMENT_SHADER, "specularBlinnPhong");
@@ -595,7 +599,7 @@ void OGLEngine::_setupBuffers() {
 	objects.teapot = new TeapotPatch();
 	objects.cube = new Cube();
 	objects.ico = new Icosahedron();
-	objects.sphere = new Sphere(1.0, 4, 4);
+	objects.sphere = new Sphere(1.0, 24, 24);
 
 	glBindVertexArray(0);
 }
@@ -868,6 +872,7 @@ void OGLEngine::_updateScene() {
 	glUniform3fv(_rtUniformLocations.cameraPos, 1,  &(camPos)[0]);
 	glUniform3fv(_rtUniformLocations.cameraUp, 1,  &(camUp)[0]);
 	glUniform3fv(_rtUniformLocations.cameraGaze, 1,  &(camGaze)[0]);
+	glUniform1i(_wfUniformLocations.wfBoolLocation, showWireFrame);
 }
 
 void OGLEngine::run()

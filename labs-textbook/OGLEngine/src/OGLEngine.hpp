@@ -153,6 +153,7 @@ private:
         GLint lineWidth;
         GLint lineColor;
         GLint materialIndex;
+        GLint wfBoolLocation;
     } _wfUniformLocations;
 
     struct WFSubroutineLocations {
