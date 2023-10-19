@@ -19,6 +19,7 @@
 #include "teapotpatch.h"
 #include "cube.h"
 #include "icosahedron.h"
+#include "sphere.h"
 #include "Materials.hpp"
 
 class OGLEngine {
@@ -123,6 +124,8 @@ private:
     GLuint _teapotProgram;
     GLuint _rtProgram;
 
+    glm::vec3 _lightColor = glm::vec3(1.0,1.0,1.0);
+
     static constexpr int NUM_VAOS = 4;
     enum VAO_ID {
         GROUND_PLANE = 0,
@@ -146,6 +149,7 @@ private:
         GLint normalMtx;
         GLint viewportMtx;
         GLint cameraPos;
+        GLint lightColor;
         GLint lineWidth;
         GLint lineColor;
         GLint materialIndex;
@@ -185,6 +189,7 @@ private:
         TeapotPatch* teapot;
         Cube* cube;
         Icosahedron* ico;
+        Sphere* sphere;
     } objects;
 
     struct Vertex {

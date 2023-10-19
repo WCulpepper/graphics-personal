@@ -5,7 +5,7 @@ uniform vec3 cameraPos;
 uniform sampler2D tex1;
 
 uniform vec3 lightPos = vec3(3.0,3.0,3.0);
-uniform vec3 lightColor = vec3(1.0,1.0,1.0);
+uniform vec3 lightColor;
 uniform float lightIntensity = 1.0;
 
 uniform vec4 DarkWoodColor = vec4( 0.8, 0.5, 0.1, 1.0 );
@@ -173,7 +173,7 @@ void main() {
 
     float mixVal = smoothstep(Line.width - 1, Line.width + 1, d);
 
-    vec3 color = (diffusePhong(lightPos, gNormal) + specularProcessor());
+    vec3 color = (diffusePhong(lightPos, gNormal) + specularProcessor() + vec3(materialAmbient[0], materialAmbient[1], materialAmbient[2]));
     if(standardShading)
         FragColor = mix(Line.color, vec4(color, 1.0), mixVal);
     else

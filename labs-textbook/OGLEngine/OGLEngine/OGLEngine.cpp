@@ -14,7 +14,7 @@ GLuint teapotVAO;
 GLuint groundVAO;
 
 
-bool usePhongSpec = true;
+bool usePhongSpec = false;
 
 int lastTime = 0;
 int nFrames = 0;
@@ -73,8 +73,18 @@ void OGLEngine::keyEventHandler(GLint key, GLint action) {
 	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
 		modelToRender = 3;
 	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
-		usePhongSpec = true;
+		modelToRender = 4;
 	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+		modelToRender = 5;
+	if (key == GLFW_KEY_6 && action == GLFW_PRESS)
+		modelToRender = 6;
+	if (key == GLFW_KEY_7 && action == GLFW_PRESS)
+		modelToRender = 7;
+	if (key == GLFW_KEY_8 && action == GLFW_PRESS)
+		modelToRender = 8;
+	if (key == GLFW_KEY_9 && action == GLFW_PRESS)
+		usePhongSpec = true;
+	if (key == GLFW_KEY_0 && action == GLFW_PRESS)
 		usePhongSpec = false;
 }
 
@@ -269,6 +279,7 @@ void OGLEngine::_setupShaders()
 	_wfUniformLocations.normalMtx = glGetUniformLocation(_wireframeProgram, "normalMtx");
 	_wfUniformLocations.viewportMtx = glGetUniformLocation(_wireframeProgram, "viewportMatrix");
 	_wfUniformLocations.cameraPos = glGetUniformLocation(_wireframeProgram, "cameraPos");
+	_wfUniformLocations.lightColor = glGetUniformLocation(_wireframeProgram, "lightColor");
 	_wfUniformLocations.lineWidth = glGetUniformLocation(_wireframeProgram, "Line.width");
 	_wfUniformLocations.lineColor = glGetUniformLocation(_wireframeProgram, "Line.color");
 	_wfUniformLocations.materialIndex = glGetUniformBlockIndex(_wireframeProgram, "MaterialSettings");
@@ -300,9 +311,11 @@ void OGLEngine::_setupShaders()
 	glUniform1f(_wfUniformLocations.lineWidth, 0.8f);
 	glUniform1f(_tessUniformLocations.lineWidth, 0.8f);
     glUniform4f(_tessUniformLocations.lineColor, 1.0f,1.0f,1.0f,1.0f);
-    glUniform4f(_tessUniformLocations.lightPos, 0.0f,0.0f,0.0f,1.0f);
+    glUniform4f(_tessUniformLocations.lightPos, 3.0f,3.0f,3.0f,1.0f);
     glUniform3f(_tessUniformLocations.lightIntensity, 1.0f,1.0f,1.0f);
     glUniform3f(_tessUniformLocations.kd, 0.9f,0.9f,1.0f);
+
+	glUniform3fv(_wfUniformLocations.lightColor, 1, &(_lightColor)[0]);
 }
 
 void OGLEngine::_setupBuffers() {
@@ -582,6 +595,7 @@ void OGLEngine::_setupBuffers() {
 	objects.teapot = new TeapotPatch();
 	objects.cube = new Cube();
 	objects.ico = new Icosahedron();
+	objects.sphere = new Sphere(1.0, 4, 4);
 
 	glBindVertexArray(0);
 }
@@ -800,17 +814,17 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 
 	switch(modelToRender){
 		case 1: 
-			glBindVertexArray(icoVAO);
-			glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
-			// objects.ico->render();
+			// glBindVertexArray(icoVAO);
+			// glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT,0);
+			objects.ico->render();
 			break;
 		case 2:
-			glBindVertexArray(cubeVAO);
-			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
-			// objects.cube->render();
+			// glBindVertexArray(cubeVAO);
+			// glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
+			objects.cube->render();
 			break;
 		case 3:
-			// glUseProgram(_teapotProgram);
+			glUseProgram(_teapotProgram);
 			model = glm::scale(model, vec3(0.25, 0.25, 0.25));
 			model = glm::rotate(model, glm::radians(-90.0f), vec3(1,0,0));
 			mv = viewMtx * model;
@@ -825,11 +839,15 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 			glUniform1i(_tessUniformLocations.tessLevel, tessLevel);
 			objects.teapot->render();
 			break;
+		case 4:
+			objects.sphere->render();
 		default: break;
 	}
 
 	glUseProgram(_wireframeProgram);
+	_setMaterial(Materials::WHITE_PLASTIC);
 
+	
 	glBindVertexArray(groundVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -927,6 +945,10 @@ void OGLEngine::_cleanupTextures() {
 void OGLEngine::_cleanupScene() {
 	delete _arcballCam;
 	delete _freeCam;
+	delete objects.ico;
+	delete objects.cube;
+	delete objects.teapot;
+	delete objects.sphere;
 }
 
 void OGLEngine::_cleanupOGL() {
