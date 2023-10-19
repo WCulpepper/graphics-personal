@@ -79,6 +79,9 @@ private:
     void _showFPS(GLFWwindow* window);
 
     void _renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx);
+    void _computeAndSendMatrices(GLint programHandle, glm::mat4 modelMatrix, glm::mat4 viewMatrix, glm::mat4 projectionMatrix, 
+                                 GLint mvpMtxLocation, GLint modelMtxLocation, GLint normalMtxLocation, glm::mat4 viewportMatrix = glm::mat4(0), 
+                                 glm::mat4 mvMatrix = glm::mat4(0), GLint viewportMatrixLocation = NULL, GLint mvMatrixLocation = NULL);
     void _updateScene();
     void _setMaterial(Materials::Material m);
 
@@ -153,6 +156,7 @@ private:
         GLint lineWidth;
         GLint lineColor;
         GLint materialIndex;
+        GLint wireframeCon;
     } _wfUniformLocations;
 
     struct WFSubroutineLocations {
