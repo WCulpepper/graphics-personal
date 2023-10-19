@@ -431,6 +431,8 @@ void OGLEngine::_setupBuffers() {
 
 	Texture t = {0, "noise"};
 
+	// Mesh icosahedron = Mesh(*icoVerts, **tindices);
+
 	static GLfloat vdata_cube[] = {
             -0.5, -0.5, -0.5,
             0.5, -0.5, -0.5,
@@ -809,17 +811,17 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 	glm::mat3 normalMtx, nm = mat4(1.0f);
 
 	glUniform1i(_tessUniformLocations.tessLevel, tessLevel);
+    
+
+	model = mat4(1.0f);
 	
-	mvp = projMtx * viewMtx * model;
-	normalMtx = glm::mat3(glm::transpose(glm::inverse(mv)));
-	glm::mat3 nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
-	glUniformMatrix4fv(_rtUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
-	glUniformMatrix3fv(_rtUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
-	glUniformMatrix4fv(_wfUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
-	glUniformMatrix4fv(_wfUniformLocations.mvMtx, 1, GL_FALSE, &(mv)[0][0]);
-	glUniformMatrix4fv(_wfUniformLocations.modelMtx, 1, GL_FALSE, &(model)[0][0]);
-	glUniformMatrix3fv(_wfUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
-	glUniformMatrix4fv(_wfUniformLocations.viewportMtx, 1, GL_FALSE, &(viewportMtx)[0][0]);
+
+	model = glm::rotate(model, _cameraAngle, vec3(0.0f, 1.0f, 0.0f));
+	_computeAndSendMatrices(_wireframeProgram, model, viewMtx, projMtx, 
+							_wfUniformLocations.mvpMtx, _wfUniformLocations.modelMtx, 
+							_wfUniformLocations.normalMtx, viewportMtx, mv, 
+							_wfUniformLocations.viewportMtx, _wfUniformLocations.mvMtx);
+	
 
 	if(usePhongSpec) {
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &_wfSubroutineLocations.phongSpec);
@@ -862,11 +864,10 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 		default: break;
 	}
 
-	
 	glUseProgram(_wireframeProgram);
 	_setMaterial(Materials::WHITE_PLASTIC);
 
-	model = glm::rotate(model, glm::radians(45.0f), vec3(0.0,1.0,0.0));
+	
 	glBindVertexArray(groundVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -973,7 +974,6 @@ void OGLEngine::_cleanupScene() {
 
 void OGLEngine::_cleanupOGL() {
 	// nothing to do here, actually. 
-	fprintf(stdout, "[INFO]: Cleaning up the engine object...\n");
 }
 
 void OGLEngine::_cleanupGLFW() {
