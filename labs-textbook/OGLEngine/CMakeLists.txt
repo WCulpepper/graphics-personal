@@ -27,4 +27,4 @@ include_directories( ingredients )
 
 add_subdirectory(ingredients)
 add_subdirectory( glad )
-add_subdirectory( OGLEngine )
+add_subdirectory( src )
