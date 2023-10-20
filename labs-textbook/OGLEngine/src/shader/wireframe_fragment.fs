@@ -4,7 +4,7 @@ uniform float time;
 uniform vec3 cameraPos;
 uniform sampler2D tex1;
 
-uniform vec3 lightPos = vec3(3.0,3.0,3.0);
+uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform float lightIntensity = 1.0;
 

@@ -80,6 +80,11 @@ private:
 
     void _renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx);
     void _updateScene();
+    void _computeAndSendTransformationMatrices(GLuint* shaderProgramHandle,
+                                                     glm::mat4 modelMatrix, glm::mat4 viewMatrix, glm::mat4 projectionMatrix,
+                                                     GLint mvpMtxLocation, GLint modelMtxLocation, GLint normalMtxLocation);
+    void _computeAndSendWireframeMatrices(GLuint* shaderProgramHandle, glm::mat4 modelMatrix, glm::mat4 viewMatrix, 
+                                                    glm::mat4 viewportMatrix, GLint viewportMatrixLocation, GLint mvMatrixLocation);
     void _setMaterial(Materials::Material m);
 
     void _cleanupBuffers();
@@ -125,6 +130,7 @@ private:
     GLuint _rtProgram;
 
     glm::vec3 _lightColor = glm::vec3(1.0,1.0,1.0);
+    glm::vec3 _lightPos = glm::vec3(0.0,5.0,5.0);
 
     static constexpr int NUM_VAOS = 4;
     enum VAO_ID {
@@ -150,6 +156,7 @@ private:
         GLint viewportMtx;
         GLint cameraPos;
         GLint lightColor;
+        GLint lightPos;
         GLint lineWidth;
         GLint lineColor;
         GLint materialIndex;

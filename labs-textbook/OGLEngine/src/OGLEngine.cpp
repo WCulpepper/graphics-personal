@@ -14,7 +14,7 @@ GLuint teapotVAO;
 GLuint groundVAO;
 
 
-bool usePhongSpec = false;
+bool usePhongSpec = true;
 bool showWireFrame = false;
 
 int lastTime = 0;
@@ -283,6 +283,7 @@ void OGLEngine::_setupShaders()
 	_wfUniformLocations.viewportMtx = glGetUniformLocation(_wireframeProgram, "viewportMatrix");
 	_wfUniformLocations.cameraPos = glGetUniformLocation(_wireframeProgram, "cameraPos");
 	_wfUniformLocations.lightColor = glGetUniformLocation(_wireframeProgram, "lightColor");
+	_wfUniformLocations.lightPos = glGetUniformLocation(_wireframeProgram, "lightPos");
 	_wfUniformLocations.lineWidth = glGetUniformLocation(_wireframeProgram, "Line.width");
 	_wfUniformLocations.lineColor = glGetUniformLocation(_wireframeProgram, "Line.color");
 	_wfUniformLocations.materialIndex = glGetUniformBlockIndex(_wireframeProgram, "MaterialSettings");
@@ -320,6 +321,8 @@ void OGLEngine::_setupShaders()
     glUniform3f(_tessUniformLocations.kd, 0.9f,0.9f,1.0f);
 
 	glUniform3fv(_wfUniformLocations.lightColor, 1, &(_lightColor)[0]);
+	glUniform3fv(_wfUniformLocations.lightPos, 1, &(_lightPos)[0]);
+	
 }
 
 void OGLEngine::_setupBuffers() {
@@ -599,7 +602,7 @@ void OGLEngine::_setupBuffers() {
 	objects.teapot = new TeapotPatch();
 	objects.cube = new Cube();
 	objects.ico = new Icosahedron();
-	objects.sphere = new Sphere(1.0, 24, 24);
+	objects.sphere = new Sphere(1.0, 32, 32);
 
 	glBindVertexArray(0);
 }
@@ -613,8 +616,8 @@ void OGLEngine::_setupScene() {
 	// sets up cameras
 	_arcballCam = new ArcballCam();
 	_arcballCam->setLookAtPoint(glm::vec3(0.0f, 0.0f, 0.0f));
-	_arcballCam->setTheta(-M_PI/3.0f);
-	_arcballCam->setPhi(M_PI/2.0f);
+	_arcballCam->setTheta(glm::radians(90.0f));
+	_arcballCam->setPhi(glm::radians(120.0f));
 	_arcballCam->setRadius(4);
 	_arcballCam->recomputeOrientation();
 
@@ -625,7 +628,7 @@ void OGLEngine::_setupScene() {
     _freeCam->recomputeOrientation();
     _freeCamSpeed = glm::vec2(0.25f, 0.04f);
 
-	_cameraPos = vec3(-2.0f, 1.5f, 2.0f);
+	_cameraPos = _arcballCam->getPosition();
 	_cameraAngle = glm::radians(140.0f);
     _rotSpeed = glm::pi<float>()/800.0f;
 	_deltaT = 0;
@@ -775,6 +778,27 @@ void OGLEngine::_setMaterial(Materials::Material m) {
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, materialUBOHandle);
 }
 
+void OGLEngine::_computeAndSendTransformationMatrices(GLuint* shaderProgramHandle,
+                                                     glm::mat4 modelMatrix, glm::mat4 viewMatrix, glm::mat4 projectionMatrix,
+                                                     GLint mvpMtxLocation, GLint modelMtxLocation, GLint normalMtxLocation) {
+	if(shaderProgramHandle) {
+		glm::mat4 mvpMatrix = projectionMatrix*viewMatrix*modelMatrix;
+		glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelMatrix)));
+		glUniformMatrix4fv(mvpMtxLocation, 1, GL_FALSE, &(mvpMatrix)[0][0]);
+		glUniformMatrix4fv(modelMtxLocation, 1, GL_FALSE, &(modelMatrix)[0][0]);
+		glUniformMatrix3fv(normalMtxLocation, 1, GL_FALSE, &(normalMatrix)[0][0]);
+	}
+}
+
+void OGLEngine::_computeAndSendWireframeMatrices(GLuint* shaderProgramHandle, glm::mat4 modelMatrix, glm::mat4 viewMatrix, 
+                                                    glm::mat4 viewportMatrix, GLint viewportMatrixLocation, GLint mvMatrixLocation) {
+	if(shaderProgramHandle) {
+		glm::mat4 mvMatrix = viewMatrix*modelMatrix;
+		glUniformMatrix4fv(mvMatrixLocation, 1, GL_FALSE, &(mvMatrix)[0][0]);
+		glUniformMatrix4fv(viewportMatrixLocation, 1, GL_FALSE, &(viewportMatrix)[0][0]);
+	}
+}
+
 void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 viewportMtx) {
 	if(!_wireframeProgram || !_teapotProgram || !_rtProgram) {
 		std::cout << "Failed to load shader programs!\n"; 
@@ -785,28 +809,32 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 	glUniformMatrix4fv(_rtUniformLocations.viewMtx, 1, GL_FALSE, &(viewMtx)[0][0]);
 
 	glm::mat4 model, mv, mvp;
-	glm::mat3 normalMtx;
+	glm::mat3 normalMtx, nm;
 
 	glUniform1i(_tessUniformLocations.tessLevel, tessLevel);
     
 
 	model = mat4(1.0f);
+	// model = glm::rotate(model, glm::radians(45.0f), glm::vec3(1.0,0.0,0.0));
 	
 
-	model = glm::rotate(model, _cameraAngle, vec3(0.0f, 1.0f, 0.0f));
-	mv = viewMtx * model;
-	mvp = projMtx * viewMtx * model;
-	normalMtx = glm::mat3(glm::transpose(glm::inverse(mv)));
-	glm::mat3 nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+	// model = glm::rotate(model, _cameraAngle, vec3(0.0f, 1.0f, 0.0f));
+	// mv = viewMtx * model;
+	// mvp = projMtx * viewMtx * model;
+	// normalMtx = glm::mat3(glm::transpose(glm::inverse(mv)));
+	// glm::mat3 nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+
+	// glUniformMatrix4fv(_wfUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
+	// glUniformMatrix4fv(_wfUniformLocations.mvMtx, 1, GL_FALSE, &(mv)[0][0]);
+	// glUniformMatrix4fv(_wfUniformLocations.modelMtx, 1, GL_FALSE, &(model)[0][0]);
+	// glUniformMatrix3fv(_wfUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
+	// glUniformMatrix4fv(_wfUniformLocations.viewportMtx, 1, GL_FALSE, &(viewportMtx)[0][0]);
+
+	_computeAndSendTransformationMatrices(&_wireframeProgram, model, viewMtx, projMtx, _wfUniformLocations.mvpMtx, _wfUniformLocations.modelMtx, _wfUniformLocations.normalMtx);
+	_computeAndSendWireframeMatrices(&_wireframeProgram, model, viewMtx, viewportMtx, _wfUniformLocations.viewportMtx, _wfUniformLocations.mvMtx);
 
 	glUniformMatrix4fv(_rtUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
 	glUniformMatrix3fv(_rtUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
-
-	glUniformMatrix4fv(_wfUniformLocations.mvpMtx, 1, GL_FALSE, &(mvp)[0][0]);
-	glUniformMatrix4fv(_wfUniformLocations.mvMtx, 1, GL_FALSE, &(mv)[0][0]);
-	glUniformMatrix4fv(_wfUniformLocations.modelMtx, 1, GL_FALSE, &(model)[0][0]);
-	glUniformMatrix3fv(_wfUniformLocations.normalMtx, 1, GL_FALSE, &(normalMtx)[0][0]);
-	glUniformMatrix4fv(_wfUniformLocations.viewportMtx, 1, GL_FALSE, &(viewportMtx)[0][0]);
 
 	if(usePhongSpec) {
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &_wfSubroutineLocations.phongSpec);
@@ -832,7 +860,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 			model = glm::scale(model, vec3(0.25, 0.25, 0.25));
 			model = glm::rotate(model, glm::radians(-90.0f), vec3(1,0,0));
 			mv = viewMtx * model;
-			nm = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+			nm = glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
 			mvp = projMtx * viewMtx * model;
 
 			glUniformMatrix4fv(_tessUniformLocations.mvMtx, 1, GL_FALSE, &(mv)[0][0]);
@@ -842,6 +870,7 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 
 			glUniform1i(_tessUniformLocations.tessLevel, tessLevel);
 			objects.teapot->render();
+			model = glm::mat4(1.0f);
 			break;
 		case 4:
 			objects.sphere->render();
@@ -851,7 +880,19 @@ void OGLEngine::_renderScene(glm::mat4 viewMtx, glm::mat4 projMtx, glm::mat4 vie
 	glUseProgram(_wireframeProgram);
 	_setMaterial(Materials::WHITE_PLASTIC);
 
-	
+	model = glm::translate(model, glm::vec3(0.0,1.0,0.0));
+	model = glm::rotate(model, glm::radians(90.0f), vec3(1.0,0.0,0.0));
+	model = glm::translate(model, glm::vec3(0.0, -1.0, 0.0));
+	_computeAndSendTransformationMatrices(&_wireframeProgram, model, viewMtx, projMtx, _wfUniformLocations.mvpMtx, _wfUniformLocations.modelMtx, _wfUniformLocations.normalMtx);
+	_computeAndSendWireframeMatrices(&_wireframeProgram, model, viewMtx, viewportMtx, _wfUniformLocations.viewportMtx, _wfUniformLocations.mvMtx);
+
+	glBindVertexArray(groundVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	model = glm::mat4(1.0);
+	_computeAndSendTransformationMatrices(&_wireframeProgram, model, viewMtx, projMtx, _wfUniformLocations.mvpMtx, _wfUniformLocations.modelMtx, _wfUniformLocations.normalMtx);
+	_computeAndSendWireframeMatrices(&_wireframeProgram, model, viewMtx, viewportMtx, _wfUniformLocations.viewportMtx, _wfUniformLocations.mvMtx);
+
 	glBindVertexArray(groundVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -925,6 +966,7 @@ void OGLEngine::shutdown() {
 		_cleanupScene();
 		_cleanupOGL();
 		_cleanupGLFW();
+		_isCleanedUp = true;
 	}
 }
 
@@ -934,9 +976,6 @@ void OGLEngine::_cleanupShaders() {
 
 void OGLEngine::_cleanupBuffers() {
 	fprintf(stdout, "[INFO]: Cleaning up buffers...\n");
-	delete objects.teapot;
-	delete objects.cube;
-	delete objects.ico;
 	glDeleteVertexArrays(1, &icoVAO);
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &teapotVAO);
@@ -948,6 +987,7 @@ void OGLEngine::_cleanupTextures() {
 }
 
 void OGLEngine::_cleanupScene() {
+	fprintf(stdout, "[INFO]: Cleaning up scene objects...\n");
 	delete _arcballCam;
 	delete _freeCam;
 	delete objects.ico;
