@@ -130,6 +130,7 @@ void OGLEngine::initialize() {
 		//if (DEBUG) printOGLInfo();
 
 		_setupBuffers();
+		_setupFBO();
 		_setupTextures();
 		_setupShaders();
 		_setupScene();
@@ -322,6 +323,9 @@ void OGLEngine::_setupShaders()
 
 	glUniform3fv(_wfUniformLocations.lightColor, 1, &(_lightColor)[0]);
 	glUniform3fv(_wfUniformLocations.lightPos, 1, &(_lightPos)[0]);
+
+	_firstPassFuncIndex = glGetSubroutineIndex(_wireframeProgram, GL_FRAGMENT_SHADER, "pass1");
+	_secondPassFuncIndex = glGetSubroutineIndex(_wireframeProgram, GL_FRAGMENT_SHADER, "pass2");
 	
 }
 
@@ -605,6 +609,50 @@ void OGLEngine::_setupBuffers() {
 	objects.sphere = new Sphere(1.0, 32, 32);
 
 	glBindVertexArray(0);
+}
+
+void OGLEngine::_createBufferTexture(GLenum texType, GLenum format, GLuint &texHandle) {
+	glActiveTexture(texType);
+	glGenTextures(1, &texHandle);
+	glBindTexture(GL_TEXTURE_2D, texHandle);
+	glTexStorage2D(GL_TEXTURE_2D, 1, format, _windowWidth, _windowHeight);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+}
+
+void OGLEngine::_setupFBO() {
+	// create FBO
+	glGenFramebuffers(1, &_fboHandle);
+	glBindFramebuffer(GL_FRAMEBUFFER, _fboHandle);
+
+	// create depth buffers + render textures
+	glGenRenderbuffers(1, &_depthBufferHandle);
+	glBindRenderbuffer(GL_RENDERBUFFER, _depthBufferHandle);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _windowWidth, _windowHeight);
+
+	_createBufferTexture(GL_TEXTURE0, GL_RGB32F, _positionBufferHandle);
+	_createBufferTexture(GL_TEXTURE1, GL_RGB32F, _normalBufferHandle);
+	_createBufferTexture(GL_TEXTURE2, GL_RGB8, _colorBufferHandle);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthBufferHandle);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _positionBufferHandle, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, _normalBufferHandle, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, _colorBufferHandle, 0);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthBufferHandle);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _positionBufferHandle, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, _normalBufferHandle, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, _colorBufferHandle, 0);
+
+	GLenum drawBuffers[] = {GL_NONE, GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+	glDrawBuffers(4, drawBuffers);
+	GLenum result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if(result == GL_FRAMEBUFFER_COMPLETE)
+		printf("Framebuffer complete\n");
+	else
+		printf("Framebuffer not complete\n");
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void OGLEngine::_setupTextures() {

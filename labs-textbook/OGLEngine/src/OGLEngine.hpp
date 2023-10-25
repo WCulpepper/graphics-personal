@@ -72,7 +72,9 @@ private:
     void _setupGLFW();
     void _setupOGL();
     void _setupShaders();
+    void _createBufferTexture(GLenum texType, GLenum format, GLuint &texHandle);
     void _setupBuffers();
+    void _setupFBO();
     void _setupTextures();
     void _setupScene();
 
@@ -108,6 +110,8 @@ private:
     // keyboard input tracking
     static constexpr GLuint NUM_KEYS = GLFW_KEY_LAST;
     GLboolean _keys[NUM_KEYS];
+
+    GLuint _fboHandle, _firstPassFuncIndex, _secondPassFuncIndex, _depthBufferHandle, _renderTexHandle, _positionBufferHandle, _normalBufferHandle, _colorBufferHandle;
 
     glm::vec2 _mousePos;
     GLint _leftMouseButtonState;

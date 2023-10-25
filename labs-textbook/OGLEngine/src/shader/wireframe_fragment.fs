@@ -12,7 +12,7 @@ uniform vec4 DarkWoodColor = vec4( 0.8, 0.5, 0.1, 1.0 );
 uniform vec4 LightWoodColor = vec4( 1.0, 0.75, 0.25, 1.0 );
 uniform mat4 Slice = mat4(1.0);
 
-layout (binding = 0) uniform MaterialSettings {
+uniform MaterialSettings {
     float materialDiffuse[4];
     float materialSpecular[4];
     float materialShininess;
@@ -29,6 +29,13 @@ vec3 corners[12] = {
 };
 
 layout (location=0) out vec4 FragColor;
+layout (location=1) out vec3 PositionData;
+layout (location=2) out vec3 NormalData;
+layout (location=3) out vec3 ColorData;
+
+layout (binding=0) uniform sampler2D PositionTex;
+layout (binding=1) uniform sampler2D NormalTex;
+layout (binding=2) uniform sampler2D ColorTex;
 
 uniform struct LineInfo {
     float width;
@@ -79,6 +86,19 @@ vec3 specularBlinnPhong() {
         return specular*vec3(materialSpecular[0], materialSpecular[1], materialSpecular[2]);
     else
         return specular;
+}
+
+subroutine void RenderPass();
+subroutine uniform RenderPass pass;
+
+subroutine (RenderPass)
+void pass1() {
+
+}
+
+subroutine (RenderPass)
+void pass2() {
+
 }
 
 vec3 gradients[16];
