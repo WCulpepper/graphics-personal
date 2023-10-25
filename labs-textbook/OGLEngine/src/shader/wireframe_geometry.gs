@@ -5,10 +5,12 @@ layout( triangle_strip, max_vertices = 3 ) out;
 
 layout (location = 0) out vec3 gNormal;
 layout (location = 1) out vec3 gPosition;
+layout (location = 2) out vec2 gtCoord;
 noperspective out vec3 gEdgeDistance;
 
 layout (location = 0) in vec3 vPos[];
 layout (location = 1) in vec3 vNorm[];
+layout (location = 2) in vec2 tCoord[];
 
 uniform mat4 viewportMatrix; // viewport matrix
 
@@ -30,18 +32,21 @@ void main() {
     gEdgeDistance = vec3( ha, 0, 0 );
     gNormal = vNorm[0];
     gPosition = vPos[0];
+    gtCoord = tCoord[0];
     gl_Position = gl_in[0].gl_Position;
     EmitVertex();
     
     gEdgeDistance = vec3( 0, hb, 0 );
     gNormal = vNorm[1];
     gPosition = vPos[1];
+    gtCoord = tCoord[1];
     gl_Position = gl_in[1].gl_Position;
     EmitVertex();
 
     gEdgeDistance = vec3( 0, 0, hc );
     gNormal = vNorm[2];
     gPosition = vPos[2];
+    gtCoord = tCoord[2];
     gl_Position = gl_in[2].gl_Position;
     EmitVertex();
 

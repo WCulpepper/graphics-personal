@@ -44,7 +44,7 @@ uniform struct LineInfo {
 
 layout (location = 0) in vec3 gNormal;
 layout (location = 1) in vec3 gPosition;
-// layout(location = 2) in vec2 tCoord;
+layout(location = 2) in vec2 gtCoord;
 noperspective in vec3 gEdgeDistance;
 
 // vec3 texColor = texture(tex1, tCoord).rgb;
@@ -93,12 +93,16 @@ subroutine uniform RenderPass pass;
 
 subroutine (RenderPass)
 void pass1() {
-
+    PositionData = gPosition;
+    NormalData = gNormal;
+    ColorData = vec3(materialDiffuse[0], materialDiffuse[1], materialDiffuse[2]);
 }
 
 subroutine (RenderPass)
 void pass2() {
-
+    vec3 pos = vec3(texture(PositionTex, gtCoord));
+    vec3 norm = vec3(texture(NormalTex, gtCoord));
+    vec3 diffColor = vec3(texture(ColorTex, gtCoord));
 }
 
 vec3 gradients[16];
@@ -179,6 +183,9 @@ float perlin(vec3 pos, float scalingFactor)
 
 void main() {
     init();
+
+    pass1();
+    pass2();
 
     vec4 cyl = Slice*vec4(gPosition.xy, 1.0, 1.0);
     float dist = length(cyl.xz);
