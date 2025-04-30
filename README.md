@@ -4,3 +4,5 @@ Repository of my personal graphics projects.
 
 This was all compiled using MinGW (gcc).
 Important libraries to include here are OpenGL, GLFW, GLAD, and stb_image.
+
+This is now just a reference for my future graphics projects, since this is a large portion of the foundational work. 
